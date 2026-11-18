@@ -1,0 +1,9 @@
+# Optional caravan visualization. Register /xparkle_rvlevel/xparkle-card.js from README first.
+# Resolve actual native entity IDs; these are synthetic examples.
+type: custom:xparkle-level-card
+appearance: native
+level_sensor: sensor.example_levelling_status
+measurement_switch: switch.example_measurement
+renew_button: button.example_keep_measuring
+tolerance_number: number.example_level_tolerance_cm
+vehicle_select: select.example_vehicle_type

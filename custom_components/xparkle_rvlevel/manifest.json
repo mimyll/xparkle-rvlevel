@@ -1,0 +1,18 @@
+{
+  "domain": "xparkle_rvlevel",
+  "name": "Xparkle RV level",
+  "version": "0.4.0",
+  "config_flow": true,
+  "dependencies": [
+    "bluetooth",
+    "bluetooth_adapters",
+    "http"
+  ],
+  "codeowners": [
+    "@mimyll"
+  ],
+  "documentation": "https://github.com/mimyll/xparkle-rvlevel",
+  "iot_class": "local_polling",
+  "integration_type": "device",
+  "issue_tracker": "https://github.com/mimyll/xparkle-rvlevel/issues"
+}

@@ -1,0 +1,192 @@
+{
+  "title": "Xparkle RV level",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Xparkle RV level",
+        "description": "Enter the sensor Bluetooth address and exact name observed by Home Assistant. Setup does not connect. Close the phone app before starting measurement.",
+        "data": {
+          "address": "Bluetooth address",
+          "expected_name": "Exact Bluetooth name"
+        }
+      }
+    },
+    "error": {
+      "invalid_target": "Check the address and supported RVLevel/RVbalance name."
+    },
+    "abort": {
+      "already_configured": "This sensor is already configured."
+    }
+  },
+  "entity": {
+    "switch": {
+      "measurement": {
+        "name": "Measurement"
+      }
+    },
+    "button": {
+      "keep_measuring": {
+        "name": "Keep measuring"
+      }
+    },
+    "sensor": {
+      "pitch_magnitude": {
+        "name": "Pitch magnitude"
+      },
+      "roll_magnitude": {
+        "name": "Roll magnitude"
+      },
+      "battery": {
+        "name": "Battery"
+      },
+      "session_status": {
+        "name": "Session status",
+        "state": {
+          "idle": "Idle",
+          "connecting": "Connecting",
+          "measuring": "Measuring",
+          "stopping": "Stopping",
+          "error": "Error",
+          "cleanup_unknown": "Cleanup unconfirmed"
+        }
+      },
+      "last_received": {
+        "name": "Last received"
+      },
+      "expires_at": {
+        "name": "Measurement expires"
+      },
+      "longitudinal_difference": {
+        "name": "Longitudinal height difference"
+      },
+      "transverse_difference": {
+        "name": "Transverse height difference"
+      },
+      "front_correction": {
+        "name": "Front correction"
+      },
+      "rear_correction": {
+        "name": "Rear correction"
+      },
+      "left_correction": {
+        "name": "Left correction"
+      },
+      "right_correction": {
+        "name": "Right correction"
+      },
+      "front_left_raise": {
+        "name": "Front left reference raise"
+      },
+      "front_right_raise": {
+        "name": "Front right reference raise"
+      },
+      "rear_left_raise": {
+        "name": "Rear left reference raise"
+      },
+      "rear_right_raise": {
+        "name": "Rear right reference raise"
+      },
+      "mount_position": {
+        "name": "Sensor mounting location",
+        "state": {
+          "not_set": "Not selected",
+          "front": "Front",
+          "rear": "Rear",
+          "right": "Right side",
+          "left": "Left side"
+        }
+      },
+      "levelling_status": {
+        "name": "Levelling guidance status",
+        "state": {
+          "dimensions_missing": "Enter reference spans",
+          "mount_missing": "Choose mounting location",
+          "directions_unconfirmed": "Confirm current directions",
+          "no_measurement": "No current manual measurement",
+          "unsupported_angle": "Angle outside supported range",
+          "ready": "Guidance available"
+        }
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Connection"
+      },
+      "uphill": {
+        "name": "Uphill flag"
+      },
+      "left_tilt": {
+        "name": "Left tilt flag"
+      }
+    },
+    "number": {
+      "level_tolerance_cm": {
+        "name": "Level tolerance"
+      }
+    },
+    "select": {
+      "vehicle_type": {
+        "name": "Vehicle illustration",
+        "state": {
+          "caravan": "Single axle caravan",
+          "tandem": "Tandem axle caravan",
+          "motorhome": "Motorhome",
+          "van": "Campervan"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cleanup_pending": {
+      "message": "The connection is in use, closing, or cleanup is unconfirmed. Check session status before starting again."
+    },
+    "session_inactive": {
+      "message": "Start measurement first. An expired session is not restarted automatically."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Measurement, dimensions and mounting",
+        "description": "Measurement ends after10 minutes without explicit renewal. Read interval targets start-to-start cadence (0.1–10s); slow replies can extend it. Tolerance/illustration-only changes neither stop nor renew measurement. Other settings stop it without restarting. Battery refresh is0(disabled) or1–168hours. Dimensions are reference-point distances along the rigid body; corrections are estimates. Mounting location neither modifies device settings nor rotates reported angles. Save a new location first, then separately confirm current output directions. Home Assistant selects the Bluetooth adapter automatically.",
+        "data": {
+          "battery_refresh_hours": "Battery refresh interval (hours, 0 = off)",
+          "measurement_interval_seconds": "Measurement interval (seconds)",
+          "vehicle_width_cm": "Transverse reference span (cm, 0 = unset)",
+          "vehicle_length_cm": "Longitudinal reference span (cm, 0 = unset)",
+          "mount_position": "Sensor mounting location (record only)",
+          "directions_confirmed": "Current directions confirmed for this mounting",
+          "level_tolerance_cm": "Level tolerance (cm)",
+          "vehicle_type": "Vehicle illustration"
+        },
+        "data_description": {
+          "vehicle_width_cm": "Measure between the left/right calculation reference points along the body, not automatically overall width or wheel track.",
+          "vehicle_length_cm": "Measure between the front/rear calculation reference points. To estimate jockey-wheel movement around an axle, use axle-to-jockey span and interpret the front figure at that support; rear is the alternative reference, not a second simultaneous move.",
+          "directions_confirmed": "Confirm only when the Uphill flag being on currently means front high and the Left tilt flag being on means left low in your mounting. This is local interpretation, not calibration or hardware validation."
+        }
+      }
+    },
+    "error": {
+      "invalid_options": "Use valid measurement settings and finite spans: width 1–500cm, length 1–2000cm; 0 leaves a span unset. Confirm directions only with both spans and a selected mounting."
+    }
+  },
+  "selector": {
+    "mount_position": {
+      "options": {
+        "not_set": "Not selected",
+        "front": "Front",
+        "rear": "Rear",
+        "right": "Right side",
+        "left": "Left side"
+      }
+    },
+    "vehicle_type": {
+      "options": {
+        "caravan": "Single axle caravan",
+        "tandem": "Tandem axle caravan",
+        "motorhome": "Motorhome",
+        "van": "Campervan"
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+# Built-in HA cards only: no custom resource, theme or styling required.
+# Replace every example entity with its actual registry ID.
+type: vertical-stack
+cards:
+  - type: tile
+    entity: switch.example_measurement
+    name: Measurement
+    features:
+      - type: toggle
+  - type: tile
+    entity: button.example_keep_measuring
+    name: Keep measuring
+    tap_action:
+      action: perform-action
+      perform_action: button.press
+      target:
+        entity_id: button.example_keep_measuring
+  - type: entities
+    title: Level and battery
+    show_header_toggle: false
+    entities:
+      - sensor.example_session_status
+      - sensor.example_pitch_magnitude
+      - sensor.example_roll_magnitude
+      - sensor.example_battery
+      - sensor.example_last_received
+      - sensor.example_levelling_status
+      - number.example_level_tolerance_cm
+      - select.example_vehicle_type
+  - type: entities
+    title: Estimated reference corrections
+    show_header_toggle: false
+    entities:
+      - sensor.example_front_correction
+      - sensor.example_rear_correction
+      - sensor.example_left_correction
+      - sensor.example_right_correction

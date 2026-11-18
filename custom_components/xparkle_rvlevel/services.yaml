@@ -1,0 +1,14 @@
+test_update_speed:
+  name: Test update speed
+  description: >-
+    Administrator-only explicit read-only timing test through Home Assistant.
+    Close the phone app first. One connection, at most32 reads, four fixed stages
+    (1,0.5,0.25,0.1seconds),40-second read deadline plus bounded disconnect.
+    No calibration, device writes, notifications or automatic retries.
+    Reports host read timing, not physical response or internal sensor sample age.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: xparkle_rvlevel

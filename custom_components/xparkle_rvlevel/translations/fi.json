@@ -1,0 +1,192 @@
+{
+  "title": "Xparkle RV level",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Xparkle RV level",
+        "description": "Anna Home Assistantin havaitseman anturin Bluetooth-osoite ja tarkka nimi. Asetus ei avaa yhteyttä. Sulje puhelimen sovellus ennen mittauksen käynnistämistä.",
+        "data": {
+          "address": "Bluetooth-osoite",
+          "expected_name": "Tarkka Bluetooth-nimi"
+        }
+      }
+    },
+    "error": {
+      "invalid_target": "Tarkista osoite ja tuettu RVLevel-/RVbalance-nimi."
+    },
+    "abort": {
+      "already_configured": "Anturi on jo lisätty."
+    }
+  },
+  "entity": {
+    "switch": {
+      "measurement": {
+        "name": "Mittaus"
+      }
+    },
+    "button": {
+      "keep_measuring": {
+        "name": "Jatka mittausta"
+      }
+    },
+    "sensor": {
+      "pitch_magnitude": {
+        "name": "Pituuskallistuksen suuruus"
+      },
+      "roll_magnitude": {
+        "name": "Sivukallistuksen suuruus"
+      },
+      "battery": {
+        "name": "Paristo"
+      },
+      "session_status": {
+        "name": "Mittauksen tila",
+        "state": {
+          "idle": "Lepotila",
+          "connecting": "Yhdistetään",
+          "measuring": "Mitataan",
+          "stopping": "Suljetaan",
+          "error": "Virhe",
+          "cleanup_unknown": "Sulkeutumista ei vahvistettu"
+        }
+      },
+      "last_received": {
+        "name": "Viimeisin vastaanotto"
+      },
+      "expires_at": {
+        "name": "Mittaus päättyy"
+      },
+      "longitudinal_difference": {
+        "name": "Pituussuunnan korkeusero"
+      },
+      "transverse_difference": {
+        "name": "Sivusuunnan korkeusero"
+      },
+      "front_correction": {
+        "name": "Keulan korjaus"
+      },
+      "rear_correction": {
+        "name": "Perän korjaus"
+      },
+      "left_correction": {
+        "name": "Vasemman puolen korjaus"
+      },
+      "right_correction": {
+        "name": "Oikean puolen korjaus"
+      },
+      "front_left_raise": {
+        "name": "Vasen etukulma nostotarve"
+      },
+      "front_right_raise": {
+        "name": "Oikea etukulma nostotarve"
+      },
+      "rear_left_raise": {
+        "name": "Vasen takakulma nostotarve"
+      },
+      "rear_right_raise": {
+        "name": "Oikea takakulma nostotarve"
+      },
+      "mount_position": {
+        "name": "Anturin asennuspaikka",
+        "state": {
+          "not_set": "Ei valittu",
+          "front": "Edessä",
+          "rear": "Takana",
+          "right": "Oikealla sivulla",
+          "left": "Vasemmalla sivulla"
+        }
+      },
+      "levelling_status": {
+        "name": "Tasausohjeen tila",
+        "state": {
+          "dimensions_missing": "Syötä laskennan mitat",
+          "mount_missing": "Valitse asennuspaikka",
+          "directions_unconfirmed": "Vahvista nykyiset suunnat",
+          "no_measurement": "Ei käynnissä olevaa mittausta",
+          "unsupported_angle": "Kulma tuetun alueen ulkopuolella",
+          "ready": "Tasausohje saatavilla"
+        }
+      }
+    },
+    "binary_sensor": {
+      "connected": {
+        "name": "Yhteys"
+      },
+      "uphill": {
+        "name": "Ylämäkilippu"
+      },
+      "left_tilt": {
+        "name": "Vasen kallistuslippu"
+      }
+    },
+    "number": {
+      "level_tolerance_cm": {
+        "name": "Tasaustoleranssi"
+      }
+    },
+    "select": {
+      "vehicle_type": {
+        "name": "Ajoneuvon kuva",
+        "state": {
+          "caravan": "Yksiakselinen vaunu",
+          "tandem": "Teliakselinen vaunu",
+          "motorhome": "Matkailuauto",
+          "van": "Retkeilyauto"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cleanup_pending": {
+      "message": "Yhteys on käytössä, sulkeutumassa tai sen sulkeutumista ei ole vahvistettu. Tarkista mittauksen tila ennen uutta käynnistystä."
+    },
+    "session_inactive": {
+      "message": "Käynnistä mittaus ensin. Päättynyttä mittausta ei jatketa automaattisesti."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Mittaus, mitat ja asennuspaikka",
+        "description": "Mittaus sulkeutuu 10 minuutissa ilman käyttäjän jatkamista. Mittausväli on tavoiteltu lukujen aloitusväli (0,1–10 s); hidas vastaus voi pidentää sitä. Pelkkä toleranssin tai kuvan muutos ei sulje eikä jatka mittausta. Muut asetukset sulkevat mittauksen käynnistämättä sitä uudelleen. Paristohaun väli on 0 (pois) tai 1–168 tuntia. Mitat ovat rungon suuntaisia laskentapisteiden välejä, ja korjaukset arvioita. Asennuspaikka ei muuta anturin asetuksia eikä käännä ilmoitettuja kulmia. Tallenna uusi asennuspaikka ensin ja vahvista nykyisten lukemien suunnat vasta erikseen. Home Assistant valitsee Bluetooth-adapterin automaattisesti.",
+        "data": {
+          "battery_refresh_hours": "Paristohaun väli (tuntia, 0 = pois)",
+          "measurement_interval_seconds": "Mittausväli (sekuntia)",
+          "vehicle_width_cm": "Sivusuunnan laskentaväli (cm, 0 = ei asetettu)",
+          "vehicle_length_cm": "Pituussuunnan laskentaväli (cm, 0 = ei asetettu)",
+          "mount_position": "Anturin asennuspaikka (sijaintitieto)",
+          "directions_confirmed": "Nykyiset suunnat vahvistettu tälle asennukselle",
+          "level_tolerance_cm": "Tasaustoleranssi (cm)",
+          "vehicle_type": "Ajoneuvon kuva"
+        },
+        "data_description": {
+          "vehicle_width_cm": "Mittaa vasemman ja oikean laskentapisteen väli rungon suuntaisesti. Kokonaisleveys ja pyörien väli ovat eri mittoja.",
+          "vehicle_length_cm": "Mittaa keulan ja perän laskentapisteiden väli. Nokkapyörän liikkeen arvioon akselin ympäri käytä akseli–nokkapyöräväliä ja keulan lukua; perän vaihtoehtoa ei tehdä samalla.",
+          "directions_confirmed": "Vahvista vain, jos nykyisessä asennuksessa Ylämäkilippu päällä tarkoittaa keula ylhäällä ja Vasen kallistuslippu päällä tarkoittaa vasen puoli alhaalla. Tämä on paikallinen tulkinta, ei kalibrointi."
+        }
+      }
+    },
+    "error": {
+      "invalid_options": "Tarkista mittausasetukset ja mitat: sivuväli 1–500 cm, pituusväli 1–2000 cm; 0 jättää mitan asettamatta. Suunnat voi vahvistaa vain, kun molemmat mitat ja asennuspaikka on valittu."
+    }
+  },
+  "selector": {
+    "mount_position": {
+      "options": {
+        "not_set": "Ei valittu",
+        "front": "Edessä",
+        "rear": "Takana",
+        "right": "Oikealla sivulla",
+        "left": "Vasemmalla sivulla"
+      }
+    },
+    "vehicle_type": {
+      "options": {
+        "caravan": "Yksiakselinen vaunu",
+        "tandem": "Teliakselinen vaunu",
+        "motorhome": "Matkailuauto",
+        "van": "Retkeilyauto"
+      }
+    }
+  }
+}
