@@ -30,7 +30,7 @@ class XparkleLevelCard extends HTMLElement {
     const source=hass.states[this._config?.level_sensor];const updated=Date.parse(source?.last_updated);
     if(source&&Number.isFinite(updated)&&updated>=this._latest){
       const a=source.attributes||{},received=Date.parse(a.received_at),sequence=a.sequence;
-      const validMetadata=Number.isFinite(received)&&Number.isInteger(sequence)&&sequence>=0&&typeof a.session_id==='string'&&a.session_id.length>0&&a.session_id.length<=64;
+      const validMetadata=Number.isFinite(received)&&received<=Date.now()+100&&Number.isInteger(sequence)&&sequence>=0&&typeof a.session_id==='string'&&a.session_id.length>0&&a.session_id.length<=64;
       if(source.state==='ready'&&!validMetadata){this._source=null;this._latest=updated;}
       else if(source.state!=='ready'||(received>=this._lastReceived&&(a.session_id!==this._sessionId||sequence>=this._lastSequence))){
         this._source=source;this._latest=updated;
@@ -69,32 +69,49 @@ class XparkleLevelCard extends HTMLElement {
     const q=this.q,a=this._source?.attributes||{},now=Date.now();
     const received=Date.parse(a.received_at),age=(now-received)/1000;
     const ttl=this._number(a.fresh_timeout_seconds),tol=this._number(a.level_tolerance_cm),p=this._number(a.longitudinal_mm),r=this._number(a.transverse_mm),width=this._number(a.width_cm),length=this._number(a.length_cm);
-    const valid=this._source?.state==='ready'&&this._online&&this._isOn()&&a.session_status==='measuring'&&a.mode==='manual'&&a.directions_confirmed===true&&Number.isFinite(age)&&age>=-0.1&&age<=ttl&&received>this._blockedThrough&&ttl>=1&&ttl<=10&&Number.isFinite(p)&&Number.isFinite(r)&&width>=1&&width<=500&&length>=1&&length<=2000&&['front','rear','left','right'].includes(a.mount_position)&&Date.parse(a.expires_at)>now;
     const toleranceValid=Number.isFinite(tol)&&tol>=0.05&&tol<=5;
+    // The backend supports at most 45 degrees. Allow only floating-point noise
+    // at that boundary; visual saturation must not admit impossible geometry.
+    const plausible=(gap,span)=>Number.isFinite(gap)&&Math.abs(gap)<=span*10*(Math.SQRT1_2+1e-12);
+    const valid=this._source?.state==='ready'&&this._online&&this._isOn()&&a.session_status==='measuring'&&a.mode==='manual'&&a.directions_confirmed===true&&Number.isFinite(age)&&age>=-0.1&&age<=ttl&&received>this._blockedThrough&&ttl>=1&&ttl<=10&&toleranceValid&&width>=1&&width<=500&&length>=1&&length<=2000&&plausible(p,length)&&plausible(r,width)&&['front','rear','left','right'].includes(a.mount_position)&&Date.parse(a.expires_at)>now;
     const level=valid&&toleranceValid?(Math.abs(p)<=tol*10&&Math.abs(r)<=tol*10?'ok':'adjust'):'unknown';
     const fmt=new Intl.NumberFormat(this._hass.language||'fi',{maximumFractionDigits:1});
-    const move=value=>!valid?'—':value===0?'0 mm':(value>0?'↑ ':'↓ ')+fmt.format(Math.abs(value))+' mm';
-    const front=move(-p),rear=move(p),left=move(-r),right=move(r),frontView=this._view==='front',topView=this._view==='top';
-    for(const [id,value] of Object.entries({'xp-front-value':front,'xp-rear-value':rear,'xp-left-value':left,'xp-right-value':right,'xp-front-inline':front,'xp-rear-inline':rear}))q(id).textContent=value;
+    const magnitude=value=>Math.abs(value)>0&&Math.abs(value)<.05?'<'+fmt.format(.1):fmt.format(Math.abs(value));
+    const move=value=>!valid?'—':value===0?'0 mm':(value>0?'↑ ':'↓ ')+magnitude(value)+' mm';
+    const describe=value=>!valid?'Ei ajantasaista korjausta':value===0?'Ei korjausta':(value>0?'Nosta ':'Laske ')+magnitude(value)+' millimetriä';
+    const correction=(id,value)=>{const node=q(id);node.textContent=move(value);node.dataset.motion=!valid?'unknown':value>0?'up':value<0?'down':'zero';node.setAttribute('aria-label',describe(value));};
+    const frontView=this._view==='front',topView=this._view==='top';
+    for(const [id,value] of Object.entries({'xp-front-value':-p,'xp-rear-value':p,'xp-left-value':-r,'xp-right-value':r,'xp-front-inline':-p,'xp-rear-inline':p}))correction(id,value);
+    const gauge=(axis,gap,span,negative,positive,sign)=>{
+      const node=q('xp-gauge-'+axis),bubble=q('xp-bubble-'+axis),label=q('xp-gauge-'+axis+'-value');
+      node.dataset.level=!valid?'unknown':Math.abs(gap)<=tol*10?'ok':'adjust';bubble.hidden=!valid;
+      // Fixed physical axes: bubble points to the HIGH end, not the end to raise.
+      // One percent slope fills the illustrative travel; no calibrated scale.
+      const offset=valid?Math.max(-1,Math.min(1,sign*gap/(span*10)/.01))*40:0;
+      bubble.style.left=(50+offset)+'%';
+      const text=!valid?'Ei ajantasaista tietoa':gap===0?'Ei korkeuseroa':(gap<0?negative:positive)+' ylempänä · '+magnitude(gap)+' mm';
+      label.textContent=text;node.setAttribute('aria-label',(axis==='transverse'?'Sivukallistus. ':'Pituuskallistus. ')+text+(valid?(node.dataset.level==='ok'?'. Toleranssin sisällä.':'. Tasausta tarvitaan.'):'') );
+    };
+    gauge('transverse',r,width,'Oikea','Vasen',-1);gauge('longitudinal',p,length,'Perä','Keula',1);
     const kind=['caravan','tandem','motorhome','van'].includes(a.vehicle_type)?a.vehicle_type:'caravan';
     const plot=this.shadowRoot.querySelector('.xp-plot'),elevation=this.shadowRoot.querySelector('.xp-elevation'),vehicle=this.shadowRoot.querySelector('.xp-vehicle');
     vehicle.dataset.kind=kind;elevation.dataset.kind=kind;plot.dataset.level=elevation.dataset.level=level;elevation.dataset.view=this._view;
     plot.hidden=!topView;elevation.hidden=topView;q('xp-top-arrow').hidden=!topView;q('xp-longitudinal').hidden=topView;
     for(const view of ['front','rear','top'])q('xp-view-'+view).setAttribute('aria-pressed',String(view===this._view));
     q('xp-face-left-label').textContent=frontView?'Vaunun oikea':'Vaunun vasen';q('xp-face-right-label').textContent=frontView?'Vaunun vasen':'Vaunun oikea';
-    q('xp-face-left-value').textContent=frontView?right:left;q('xp-face-right-value').textContent=frontView?left:right;
+    correction('xp-face-left-value',frontView?r:-r);correction('xp-face-right-value',frontView?-r:r);
     const mount=a.mount_position;this.shadowRoot.querySelector('.xp-marker').dataset.side=mount;
     const faceMarker=q('xp-face-marker');faceMarker.hidden=!['left','right'].includes(mount);faceMarker.dataset.side=frontView?(mount==='right'?'left':'right'):mount;
     const tilt=valid?Math.asin(Math.max(-1,Math.min(1,r/(width*10))))*180/Math.PI:0;
     this.shadowRoot.querySelector('.xp-face').style.setProperty('--xp-tilt',(frontView?-tilt:tilt)+'deg');
     q('xp-facing-note').textContent=topView?'Sivut kulkusuuntaan katsottuna.':frontView?'Edestä: kuvan vasen = vaunun oikea.':'Takaa: kuvan vasen = vaunun vasen.';
-    const text=valid?`Keula ${front}, perä ${rear}, vaunun vasen ${left}, vaunun oikea ${right}.`:'Ei ajantasaista tasausohjetta.';
+    const text=valid?`Keula: ${describe(-p)}, perä: ${describe(p)}, vaunun vasen: ${describe(-r)}, vaunun oikea: ${describe(r)}.`:'Ei ajantasaista tasausohjetta.';
     plot.setAttribute('aria-label','Ajoneuvo ylhäältä. '+text);elevation.setAttribute('aria-label','Ajoneuvo '+(frontView?'edestä. ':'takaa. ')+text);
     q('xp-overall').dataset.level=level;
     const statuses={dimensions_missing:'Syötä laskennan mitat asetuksissa',mount_missing:'Valitse anturin asennuspaikka',directions_unconfirmed:'Vahvista anturin nykyiset suunnat',unsupported_angle:'Kulma tuetun alueen ulkopuolella'};
     const sessionLabels={connecting:'Yhdistetään anturiin…',stopping:'Suljetaan yhteyttä…',cleanup_unknown:'Yhteyden sulkeutumista ei vahvistettu',error:'Mittaus päättyi virheeseen'};
     const diagnosticBusy=this._nonManualBusy();
-    q('xp-overall').textContent=!this._online?'Yhteys Home Assistantiin katkennut':diagnosticBusy?(a.mode==='speed_test'?'Rajattu nopeustesti käynnissä':'Paristotietojen haku käynnissä'):sessionLabels[a.session_status]||statuses[this._source?.state]||(!this._isOn()?'Mittaus suljettu':!valid?'Odotetaan tuoretta lukemaa':!toleranceValid?'Tarkista tasaustoleranssi':(level==='ok'?'Suorassa':'Tasausta tarvitaan')+' · toleranssi ±'+new Intl.NumberFormat(this._hass.language||'fi',{maximumFractionDigits:2}).format(tol)+' cm');
+    q('xp-overall').textContent=!this._online?'Yhteys Home Assistantiin katkennut':diagnosticBusy?(a.mode==='speed_test'?'Rajattu nopeustesti käynnissä':'Paristotietojen haku käynnissä'):sessionLabels[a.session_status]||statuses[this._source?.state]||(!this._isOn()?'Mittaus suljettu':!toleranceValid?'Tarkista tasaustoleranssi':!valid?'Odotetaan tuoretta lukemaa':(level==='ok'?'Suorassa':'Tasausta tarvitaan')+' · toleranssi ±'+new Intl.NumberFormat(this._hass.language||'fi',{maximumFractionDigits:2}).format(tol)+' cm');
     q('xp-session').querySelector('span').textContent=this._pending?'Odota…':diagnosticBusy?(a.mode==='speed_test'?'Lopeta nopeustesti':'Lopeta haku'):this._isOn()?'Lopeta mittaus':'Aloita mittaus';
     const sw=this._hass.states[this._config.measurement_switch];q('xp-session').disabled=!this._online||this._pending||!sw||!['on','off'].includes(sw.state)||['stopping','cleanup_unknown'].includes(a.session_status);
     q('xp-renew').disabled=!this._online||this._pending||!this._isOn()||a.mode!=='manual'||a.session_status!=='measuring';
@@ -108,7 +125,7 @@ class XparkleLevelCard extends HTMLElement {
   }
   getCardSize(){return 8;}
   getGridOptions(){return {columns:12,rows:'auto',min_columns:6};}
-  getRenderDiagnostics(){return {version:'0.4.0',renderCount:this._renderCount,acceptedSamples:this._acceptedSamples,coalescedSamples:this._coalescedSamples,acceptedSampleToFrameOpportunityMs:[...this._paints],metric:'accepted_coherent_sample_to_second_requestAnimationFrame_not_physical_pixel_latency'};}
+  getRenderDiagnostics(){return {version:'0.5.0',renderCount:this._renderCount,acceptedSamples:this._acceptedSamples,coalescedSamples:this._coalescedSamples,acceptedSampleToFrameOpportunityMs:[...this._paints],metric:'accepted_coherent_sample_to_second_requestAnimationFrame_not_physical_pixel_latency'};}
 }
 if(!customElements.get('xparkle-level-card'))customElements.define('xparkle-level-card',XparkleLevelCard);
 window.customCards=window.customCards||[];

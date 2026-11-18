@@ -12,11 +12,12 @@ from custom_components.xparkle_rvlevel.runtime import battery_store
 from test_native_lifecycle import native_entry,native_manager
 from test_ha_adapter import adapter
 
-async def test_old_new_old_preserves_entry_registry_options_cache_and_idle(adapter,monkeypatch,tmp_path):
+@pytest.mark.parametrize("source_version",["0.3.0","0.4.0"])
+async def test_old_new_old_preserves_entry_registry_options_cache_and_idle(adapter,monkeypatch,tmp_path,source_version):
     oldroot=tmp_path/'old';oldroot.mkdir()
-    with zipfile.ZipFile(Path(__file__).parent/'fixtures/component-0.3.0.zip') as z:z.extractall(oldroot)
+    with zipfile.ZipFile(Path(__file__).parent/('fixtures/component-'+source_version+'.zip')) as z:z.extractall(oldroot)
     folder=oldroot/'custom_components/xparkle_rvlevel'
-    package=ModuleType('xparkle_v03_fixture');package.__path__=[str(folder)];sys.modules[package.__name__]=package
+    package=ModuleType('xparkle_old_fixture_'+source_version.replace('.','_'));package.__path__=[str(folder)];sys.modules[package.__name__]=package
     spec=importlib.util.spec_from_file_location(package.__name__,folder/'__init__.py',submodule_search_locations=[str(folder)])
     old=importlib.util.module_from_spec(spec);sys.modules[package.__name__]=old;spec.loader.exec_module(old)
     hass=HomeAssistant(str(tmp_path/'ha'));manager,add=native_manager(hass,new,monkeypatch);manager._initialized.set()

@@ -86,8 +86,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           RELEASE_VERSION=$(python -c 'import json; print(json.load(open("custom_components/xparkle_rvlevel/manifest.json"))["version"])')
-          test "$RELEASE_VERSION" = "0.4.0"
+          test "$RELEASE_VERSION" = "0.5.0"
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$RELEASE_VERSION" -f sha="$GITHUB_SHA" >/dev/null
           TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_VERSION" --jq '.object.sha')
           test "$TAG_SHA" = "$GITHUB_SHA"
-          gh release create "$RELEASE_VERSION" --verify-tag --title "Xparkle RV level $RELEASE_VERSION" --notes-file RELEASE.md build/xparkle-rvlevel-0.4.0.zip build/SHA256SUMS build/component-files.json
+          gh release create "$RELEASE_VERSION" --verify-tag --title "Xparkle RV level $RELEASE_VERSION" --notes-file RELEASE.md build/xparkle-rvlevel-0.5.0.zip build/SHA256SUMS build/component-files.json

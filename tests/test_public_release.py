@@ -48,6 +48,27 @@ def test_old_fixture_has_reviewed_identity_and_component_only_layout():
         assert all(name.startswith('custom_components/xparkle_rvlevel/') and '..' not in Path(name).parts for name in z.namelist())
 
 
+def test_previous_public_fixture_matches_reviewed_release():
+    import hashlib,zipfile
+    fixture=ROOT/'tests/fixtures/component-0.4.0.zip'
+    assert hashlib.sha256(fixture.read_bytes()).hexdigest()=='e3c8bca2362d396962d904b69b249c5b01f8a840068b5068385eb5cb70878914'
+    with zipfile.ZipFile(fixture) as z:
+        assert len(z.namelist())==26
+        assert all(name.startswith('custom_components/xparkle_rvlevel/') and '..' not in Path(name).parts for name in z.namelist())
+        assert json.loads(z.read('custom_components/xparkle_rvlevel/manifest.json'))['version']=='0.4.0'
+
+
+def test_package_and_metadata_ignore_inventory_iteration_order(tmp_path,monkeypatch):
+    copy=tmp_path/'public';shutil.copytree(ROOT,copy,ignore=shutil.ignore_patterns('.git','__pycache__','build','ci-results'))
+    inventory=verifier.verify(copy)
+    outputs=['xparkle-rvlevel-0.5.0.zip','component-files.json','SHA256SUMS']
+    monkeypatch.setattr(verifier,'verify',lambda root:inventory)
+    verifier.build(copy);before={name:(copy/'build'/name).read_bytes() for name in outputs}
+    monkeypatch.setattr(verifier,'verify',lambda root:dict(reversed(list(inventory.items()))))
+    verifier.build(copy)
+    assert {name:(copy/'build'/name).read_bytes() for name in outputs}==before
+
+
 async def test_native_config_entry_only_schema_reports_yaml_without_starting(tmp_path,caplog,monkeypatch):
     from unittest.mock import AsyncMock
     from homeassistant.core import HomeAssistant

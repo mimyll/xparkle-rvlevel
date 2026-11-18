@@ -48,6 +48,7 @@
   "script/verify_release.py",
   "tests/conftest.py",
   "tests/fixtures/component-0.3.0.zip",
+  "tests/fixtures/component-0.4.0.zip",
   "tests/frontend/behavior.js",
   "tests/frontend/fixture.html",
   "tests/frontend/run_browser.py",

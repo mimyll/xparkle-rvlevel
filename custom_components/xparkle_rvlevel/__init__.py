@@ -17,7 +17,7 @@ async def async_setup(hass, config):
     from pathlib import Path
     from homeassistant.components.http import StaticPathConfig
     await hass.http.async_register_static_paths([StaticPathConfig(
-        "/xparkle_rvlevel/0.4.0/xparkle-card.js",
+        "/xparkle_rvlevel/0.5.0/xparkle-card.js",
         str(Path(__file__).parent / "frontend" / "xparkle-card.js"), True)])
     from .card import XparkleCardView
     hass.http.register_view(XparkleCardView())

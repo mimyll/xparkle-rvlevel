@@ -270,7 +270,7 @@ def test_translations_and_package_contain_no_runtime_target():
     assert english["entity"].keys() == finnish["entity"].keys()
     assert finnish["entity"]["button"]["keep_measuring"]["name"] == "Jatka mittausta"
     manifest = json.loads((component / "manifest.json").read_text())
-    assert manifest["version"] == "0.4.0" and manifest["config_flow"]
+    assert manifest["version"] == "0.5.0" and manifest["config_flow"]
 
 
 async def test_failed_wrapper_connect_stays_unconfirmed_even_if_local_client_is_down(adapter, monkeypatch):

@@ -4,7 +4,7 @@
 
 An independent, read-only Home Assistant integration for compatible Xparkle RV level sensors. It provides manually controlled measurements, optional scheduled battery reads and advisory levelling estimates. It is not affiliated with the device manufacturer.
 
-**Early 0.4.0 release.** Bluetooth compatibility is deliberately restricted to the runtime matrix below. Physical direction mapping, angle accuracy, sensor-internal sample age, movement-to-display latency and battery lifetime are not established by this release.
+**Early 0.5.0 release.** Bluetooth compatibility is deliberately restricted to the runtime matrix below. Physical direction mapping, angle accuracy, sensor-internal sample age, movement-to-display latency and battery lifetime are not established by this release.
 
 ## Install and update
 
@@ -19,13 +19,13 @@ The public repository uses the standard `custom_components/xparkle_rvlevel/` lay
 
 Before updating, turn Measurement off and confirm **Session status: idle**, **Connection: off**, and diagnostics **cleanup_confirmed: true**, with no pending owned work. Disable the existing integration and verify it unloaded successfully. Keep a component-only copy of the old source outside `custom_components` and record current options. Then use Marketplace to download the release, check HA configuration, and perform a normal restart while the entry remains disabled. Enable the same entry afterward. Do not remove/re-add it: upgrades retain the existing entry, entity IDs, options, battery cache and history.
 
-Source replacement is not safe while a session or uncertain cleanup remains active. Marketplace's update notification alone does not establish those prerequisites. Version 0.4 does not change the native option schema or any existing entity identity. Measurement stays off after restart; periodic battery work is first due one full configured interval later.
+Source replacement is not safe while a session or uncertain cleanup remains active. Marketplace's update notification alone does not establish those prerequisites. Version 0.5 does not change the native option schema or any existing entity identity. Measurement stays off after restart; periodic battery work is first due one full configured interval later.
 
-For manual installation, the release asset `xparkle-rvlevel-0.4.0.zip` contains `custom_components/xparkle_rvlevel/`. Compare `SHA256SUMS`, preserve old source and copy only that folder. Never upload the source archive into HA as an integration.
+For manual installation, the release asset `xparkle-rvlevel-0.5.0.zip` contains `custom_components/xparkle_rvlevel/`. Compare `SHA256SUMS`, preserve old source and copy only that folder. Never upload the source archive into HA as an integration.
 
-### Recovering a 0.3 installation
+### Recovering the previous installation
 
-With cleanup confirmed and the entry disabled/unloaded, restore its saved exact 0.3 component source, run the HA configuration check and restart normally while still disabled. The eight native options remain compatible, including fractional cadence. Verify options before re-enabling the same entry. If a newly created optional card resource/view was changed, restore only its saved unchanged object and reload the browser. No HA storage edits, full-instance restore or entry recreation is needed. Recorder/history preservation is a native update process contract; synthetic lifecycle tests are not a Recorder database test.
+With cleanup confirmed and the entry disabled/unloaded, restore its saved exact previous component source, run the HA configuration check and restart normally while still disabled. The eight native options remain compatible, including fractional cadence. Verify options before re-enabling the same entry. If a newly created optional card resource/view was changed, restore only its saved unchanged object and reload the browser. No HA storage edits, full-instance restore or entry recreation is needed. Recorder/history preservation is a native update process contract; synthetic lifecycle tests are not a Recorder database test.
 
 ## Standard Home Assistant appearance
 
@@ -36,6 +36,8 @@ For optional front/rear/top caravan graphics, add `/xparkle_rvlevel/xparkle-card
 The quieter green design is an explicit per-card choice: `appearance: mint`, as in [examples/mint-card.yaml](examples/mint-card.yaml). It affects only that card. It is never installed as a global theme. Vehicle selection offers caravan, tandem caravan, motorhome and campervan; front/rear views always label physical sides in the direction of travel. Green levelling status is a separate semantic signal, shown only for fresh, valid, confirmed measurements within tolerance.
 
 Old versioned 0.3 resource URLs should be replaced with the stable URL when upgrading. Keep the selected card appearance explicitly (`mint` to preserve the earlier green design). No dashboard/resource is silently rewritten at startup.
+
+The optional graphic card colors correction arrows **blue for raise** and **orange for lower**, with arrow symbols and a text key. Its two illustrative spirit levels use fixed physical endpoints: **Vasen–Oikea** (left–right in the direction of travel) and **Perä–Keula** (rear–front). The bubble moves toward the **high end**; the correction arrow tells you which end to raise or lower. The displays share one fresh coherent sample. Each axis turns green within the configured height tolerance; the overall status requires both axes. Missing or stale data hides the bubbles. Bubble travel is illustrative, saturates at a one-percent slope, and has no calibrated degree scale.
 
 ## Measurement and battery
 

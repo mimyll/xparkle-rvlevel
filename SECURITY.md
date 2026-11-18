@@ -2,7 +2,7 @@
 
 ## Supported candidate and runtime
 
-Version 0.4.0 is the current public preview. The initial runtime support is Home Assistant 2026.11.0 / habluetooth 7.1.2. ESPHome uses bleak-esphome 4.0.0 / aioesphomeapi 46.25.0 and Bleak 3.0.2 or 3.1.0. Local Linux BlueZ requires Bleak 3.0.2. Runtime guards reject other combinations before a native connection is dispatched. This intentionally narrow baseline must be reviewed when dependencies change; do not bypass it to claim broader compatibility.
+Version 0.5.0 is the current public preview. The initial runtime support is Home Assistant 2026.11.0 / habluetooth 7.1.2. ESPHome uses bleak-esphome 4.0.0 / aioesphomeapi 46.25.0 and Bleak 3.0.2 or 3.1.0. Local Linux BlueZ requires Bleak 3.0.2. Runtime guards reject other combinations before a native connection is dispatched. This intentionally narrow baseline must be reviewed when dependencies change; do not bypass it to claim broader compatibility.
 
 ## Threat boundary
 
