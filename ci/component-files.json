@@ -1,6 +1,6 @@
 {
   "LICENSE": "6f4f89b2907983e51df5c31365759e3ecfdd3504481e5e4093fbcc27581024dc",
-  "__init__.py": "70c071e089bb633859a09f24c8bb158ba5214e9f012954b82e72ada3506cf3d7",
+  "__init__.py": "c4c98d6d900ddecaad98c5dd57cf8b36a965adc53e8a64d502560d210f73565b",
   "binary_sensor.py": "2cc52c99ad229a94f02625a2515b11b1ee9d43eec538864fb87fd96861270c90",
   "brand/icon.png": "d4393b43053ce8b3fe216f1be448c7cbfe09c7f4f1b658c0fc6c9c0ffb63945c",
   "button.py": "b621054406f414f138d59bbddee8f890e04a582510538bd881d2c35bc2d9e916",
@@ -11,7 +11,7 @@
   "entity.py": "9df1053896b0f0491ef3623411e8e8b84a70d17426f8b973980faff3d95c3d04",
   "frontend/xparkle-card.js": "2b70f36fa77c1ac099101051cc3993b5df28f0d7aefac6c60fda3ddc595b93b3",
   "levelling.py": "bd71e6a9f64e4a8d186d6cead5df3e9b929ae179ad7540d1afac3e63a0c5b74a",
-  "manifest.json": "f938c9864efc96688da343275e29b4a5fac7a27d56db80bd54e85a719e9d92df",
+  "manifest.json": "d893a744d87f565f49918893b7b929ce35d7bdefa0e316e8bbed0bd344f6eba0",
   "number.py": "2889bdb647dda5418f2456783cdf549cc22f458f31739d55a60219b49330cbe5",
   "protocol.py": "91cbdabbdac6dd9612da5f87acd2cd20ead2872463a9d2a6ba79486538f0a06b",
   "runtime.py": "ba616a28e44cb7b0f5f87e71f73bb77f3f0117b1cc7d802d6bb70382436b2b3b",

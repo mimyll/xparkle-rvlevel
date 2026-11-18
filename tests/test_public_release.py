@@ -46,3 +46,48 @@ def test_old_fixture_has_reviewed_identity_and_component_only_layout():
     with zipfile.ZipFile(fixture) as z:
         assert len(z.namelist())==25
         assert all(name.startswith('custom_components/xparkle_rvlevel/') and '..' not in Path(name).parts for name in z.namelist())
+
+
+async def test_native_config_entry_only_schema_reports_yaml_without_starting(tmp_path,caplog,monkeypatch):
+    from unittest.mock import AsyncMock
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers import issue_registry as ir
+    import custom_components.xparkle_rvlevel as integration
+
+    hass=HomeAssistant(str(tmp_path))
+    setup=AsyncMock();entry_setup=AsyncMock()
+    monkeypatch.setattr(integration,'async_setup',setup)
+    monkeypatch.setattr(integration,'async_setup_entry',entry_setup)
+    registry=ir.async_get(hass)
+    unrelated={'example':{'value':'keep'}}
+    assert integration.CONFIG_SCHEMA(unrelated) is unrelated
+    assert not registry.issues and not caplog.records
+    for unsupported in ({},{'address':'00:00:00:00:00:01'}):
+        config={**unrelated,'xparkle_rvlevel':unsupported}
+        assert integration.CONFIG_SCHEMA(config) is config
+        assert config['example']==unrelated['example']
+        issue=registry.async_get_issue('homeassistant','config_entry_only_xparkle_rvlevel')
+        assert issue is not None and issue.severity is ir.IssueSeverity.ERROR
+        assert issue.translation_key=='config_entry_only' and issue.issue_domain=='xparkle_rvlevel'
+    assert 'does not support YAML setup' in caplog.text
+    assert 'xparkle_rvlevel' not in hass.data
+    setup.assert_not_called();entry_setup.assert_not_called()
+    await hass.async_stop(force=True)
+
+
+def test_package_protocol_import_and_decode_without_homeassistant():
+    import subprocess,sys
+    program='''
+import sys,importlib.abc
+class NoHA(importlib.abc.MetaPathFinder):
+    def find_spec(self,fullname,path=None,target=None):
+        if fullname=='homeassistant' or fullname.startswith('homeassistant.'):
+            raise AssertionError('unexpected_homeassistant_dependency')
+sys.meta_path.insert(0,NoHA())
+from custom_components.xparkle_rvlevel.protocol import decode
+result=decode(bytes((0,0,9,1,0,50,100)))
+assert (result.pitch_magnitude,result.roll_magnitude,result.battery)==(.09,.5,100)
+assert result.uphill is False and result.left_tilt is True
+assert not any(name=='homeassistant' or name.startswith('homeassistant.') for name in sys.modules)
+'''
+    subprocess.run([sys.executable,'-S','-c',program],cwd=ROOT,check=True,capture_output=True,text=True,timeout=10)

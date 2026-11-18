@@ -1,6 +1,15 @@
 """User-controlled RV level measurement; setup always leaves BLE idle."""
-from .const import PLATFORMS, CONF_ADDRESS, CONF_POLL_SECONDS, DEFAULT_OPTIONS
+from .const import DOMAIN, PLATFORMS, CONF_ADDRESS, CONF_POLL_SECONDS, DEFAULT_OPTIONS
 from .session import Session, Limits
+
+
+def _config_schema(config):
+    """Apply native config-entry-only validation while keeping protocol imports pure."""
+    from homeassistant.helpers import config_validation as cv
+    return cv.config_entry_only_config_schema(DOMAIN)(config)
+
+
+CONFIG_SCHEMA = _config_schema
 
 
 async def async_setup(hass, config):
