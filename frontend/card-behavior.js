@@ -125,7 +125,7 @@ class XparkleLevelCard extends HTMLElement {
   }
   getCardSize(){return 8;}
   getGridOptions(){return {columns:12,rows:'auto',min_columns:6};}
-  getRenderDiagnostics(){return {version:'0.5.0',renderCount:this._renderCount,acceptedSamples:this._acceptedSamples,coalescedSamples:this._coalescedSamples,acceptedSampleToFrameOpportunityMs:[...this._paints],metric:'accepted_coherent_sample_to_second_requestAnimationFrame_not_physical_pixel_latency'};}
+  getRenderDiagnostics(){return {version:'0.5.1',renderCount:this._renderCount,acceptedSamples:this._acceptedSamples,coalescedSamples:this._coalescedSamples,acceptedSampleToFrameOpportunityMs:[...this._paints],metric:'accepted_coherent_sample_to_second_requestAnimationFrame_not_physical_pixel_latency'};}
 }
 if(!customElements.get('xparkle-level-card'))customElements.define('xparkle-level-card',XparkleLevelCard);
 window.customCards=window.customCards||[];

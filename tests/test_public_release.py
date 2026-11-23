@@ -58,10 +58,20 @@ def test_previous_public_fixture_matches_reviewed_release():
         assert json.loads(z.read('custom_components/xparkle_rvlevel/manifest.json'))['version']=='0.4.0'
 
 
+def test_immediate_previous_fixture_matches_published_050():
+    import hashlib,zipfile
+    fixture=ROOT/'tests/fixtures/component-0.5.0.zip'
+    assert hashlib.sha256(fixture.read_bytes()).hexdigest()=='9e5f73968b0d697fae4bbb228cbac6c6268569e9199ef6f3cccd773c47f480f4'
+    with zipfile.ZipFile(fixture) as z:
+        assert len(z.namelist())==26
+        assert all(name.startswith('custom_components/xparkle_rvlevel/') and '..' not in Path(name).parts for name in z.namelist())
+        assert json.loads(z.read('custom_components/xparkle_rvlevel/manifest.json'))['version']=='0.5.0'
+
+
 def test_package_and_metadata_ignore_inventory_iteration_order(tmp_path,monkeypatch):
     copy=tmp_path/'public';shutil.copytree(ROOT,copy,ignore=shutil.ignore_patterns('.git','__pycache__','build','ci-results'))
     inventory=verifier.verify(copy)
-    outputs=['xparkle-rvlevel-0.5.0.zip','component-files.json','SHA256SUMS']
+    outputs=['xparkle-rvlevel-0.5.1.zip','component-files.json','SHA256SUMS']
     monkeypatch.setattr(verifier,'verify',lambda root:inventory)
     verifier.build(copy);before={name:(copy/'build'/name).read_bytes() for name in outputs}
     monkeypatch.setattr(verifier,'verify',lambda root:dict(reversed(list(inventory.items()))))

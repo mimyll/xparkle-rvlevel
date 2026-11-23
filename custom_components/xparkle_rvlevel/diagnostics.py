@@ -2,10 +2,13 @@
 
 
 async def async_get_config_entry_diagnostics(hass, entry):
-    from .transport import runtime_versions
+    from .compatibility import runtime_versions, runtime_review_status
     session = entry.runtime_data
+    versions = runtime_versions(hass)
     return {
-        "runtime_versions": runtime_versions(),
+        "runtime_versions": versions,
+        "runtime_review_status": runtime_review_status(versions),
+        "runtime_admission_policy": "required_capabilities_not_core_version",
         "adapter_selection": "home_assistant_automatic",
         "session_status": session.status,
         "stop_reason": session.reason,

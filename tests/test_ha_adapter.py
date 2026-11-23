@@ -48,10 +48,10 @@ def route(m, bt, monkeypatch, *, fresh=True, name_count=1, approved=True, free=T
                               connections_in_progress=lambda: 0,
                               get_allocations=lambda: SimpleNamespace(slots=3,free=3,allocated=[]))
     path = SimpleNamespace(scanner=scanner, ble_device=SimpleNamespace(address=data["address"], details={"source":"SYNTHETIC_PROXY"}))
-    monkeypatch.setattr(m, "runtime_versions", lambda: {"homeassistant":"2026.11.0", "habluetooth":"7.1.2", "bleak":"3.0.2", "bleak-esphome":"4.0.0", "aioesphomeapi":"46.25.0"})
+    monkeypatch.setattr(m, "runtime_versions", lambda hass=None: {"homeassistant":"2026.11.0", "habluetooth":"7.1.2", "bleak":"3.0.2", "bleak-esphome":"4.0.0", "aioesphomeapi":"46.25.0"})
     values = {"async_current_scanners": lambda *a: [scanner], "async_discovered_service_info": lambda *a, **k: [info] * name_count,
               "async_scanner_devices_by_address": lambda *a, **k: [path],
-              "async_ble_device_from_address": lambda *a, **k: "synthetic_device"}
+              "async_ble_device_from_address": lambda *a, **k: path.ble_device}
     for name, value in values.items(): monkeypatch.setattr(bt, name, value, raising=False)
     def entries(domain):
         if domain == "esphome":
@@ -68,7 +68,7 @@ def test_ha_managed_route_gate(adapter, monkeypatch, fresh, count, approved, fre
     m, bt = adapter
     hass, data = route(m, bt, monkeypatch, fresh=fresh, name_count=count, approved=approved, free=free)
     if fresh and approved and free:
-        assert m.resolve(hass, data) == "synthetic_device"
+        assert m.resolve(hass, data).address == data["address"]
     else:
         with pytest.raises(m.RouteUnavailable): m.resolve(hass, data)
 
@@ -78,7 +78,7 @@ async def test_wrapper_is_new_per_session_read_only_and_gate_rechecked_before_co
     hass, data = route(m, bt, monkeypatch)
     clients = []
     def wrapper(device, *, timeout, pair):
-        assert device == "synthetic_device" and timeout == 20 and pair is False
+        assert device.address == data["address"] and timeout == 20 and pair is False
         client = SimpleNamespace(connect=AsyncMock(), disconnect=AsyncMock(), read_gatt_char=AsyncMock(return_value=b"data"), is_connected=False)
         clients.append(client)
         return client
@@ -270,14 +270,14 @@ def test_translations_and_package_contain_no_runtime_target():
     assert english["entity"].keys() == finnish["entity"].keys()
     assert finnish["entity"]["button"]["keep_measuring"]["name"] == "Jatka mittausta"
     manifest = json.loads((component / "manifest.json").read_text())
-    assert manifest["version"] == "0.5.0" and manifest["config_flow"]
+    assert manifest["version"] == "0.5.1" and manifest["config_flow"]
 
 
 async def test_failed_wrapper_connect_stays_unconfirmed_even_if_local_client_is_down(adapter, monkeypatch):
     m, bt = adapter
     hass, data = route(m, bt, monkeypatch)
     client = SimpleNamespace(connect=AsyncMock(side_effect=RuntimeError("PRIVATE_CONNECT_SENTINEL")),
-                             disconnect=AsyncMock(), is_connected=False)
+                             disconnect=AsyncMock(), read_gatt_char=AsyncMock(), is_connected=False)
     monkeypatch.setattr(m, "HaBleakClientWrapper", lambda *a, **k: client)
     transport = m.HATransport(hass, data)
     with pytest.raises(RuntimeError): await transport.connect()
@@ -289,7 +289,7 @@ async def test_failed_wrapper_connect_stays_unconfirmed_even_if_local_client_is_
 async def test_only_acknowledged_teardown_of_live_wrapper_confirms_cleanup(adapter, monkeypatch, was_connected, acknowledged):
     m, bt = adapter
     hass, data = route(m, bt, monkeypatch)
-    client = SimpleNamespace(connect=AsyncMock(), is_connected=was_connected)
+    client = SimpleNamespace(connect=AsyncMock(), read_gatt_char=AsyncMock(), is_connected=False)
     async def disconnect():
         client.is_connected = False
         if not acknowledged: raise RuntimeError("PRIVATE_DISCONNECT_SENTINEL")
@@ -297,6 +297,7 @@ async def test_only_acknowledged_teardown_of_live_wrapper_confirms_cleanup(adapt
     monkeypatch.setattr(m, "HaBleakClientWrapper", lambda *a, **k: client)
     transport = m.HATransport(hass, data)
     await transport.connect()
+    client.is_connected = was_connected
     try: await transport.disconnect()
     except RuntimeError: pass
     assert transport.cleanup_confirmed is (was_connected and acknowledged)

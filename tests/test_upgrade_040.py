@@ -12,7 +12,7 @@ from custom_components.xparkle_rvlevel.runtime import battery_store
 from test_native_lifecycle import native_entry,native_manager
 from test_ha_adapter import adapter
 
-@pytest.mark.parametrize("source_version",["0.3.0","0.4.0"])
+@pytest.mark.parametrize("source_version",["0.3.0","0.4.0","0.5.0"])
 async def test_old_new_old_preserves_entry_registry_options_cache_and_idle(adapter,monkeypatch,tmp_path,source_version):
     oldroot=tmp_path/'old';oldroot.mkdir()
     with zipfile.ZipFile(Path(__file__).parent/('fixtures/component-'+source_version+'.zip')) as z:z.extractall(oldroot)

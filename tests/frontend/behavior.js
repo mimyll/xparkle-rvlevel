@@ -162,9 +162,9 @@
   }
   const expected=card._renderCount;card.remove();await frame();check(card._ageTimer===null&&!card._bound,'Disconnect cleans timer/listeners');
   document.getElementById('mount').append(card);card.hass=hass;await frame();check(card._renderCount>expected,'Reconnect card lifecycle');
-  const report={status:'PASS',assertions,acceptedSampleToSecondFrameOpportunityP95Ms:Math.round(p95*10)/10,samples:timings.length,scope:'actual Chrome local synthetic fixture, no HA/BLE; frame opportunity is not proof of actual pixel latency',version:'0.5.0'};
-  results.textContent=JSON.stringify(report,null,2);document.title='PASS — Xparkle0.5.0 local browser tests';window.fixtureResult=report;
- }catch(error){results.textContent='FAIL: '+error.message;document.title='FAIL — Xparkle0.5.0 local browser tests';}
+  const report={status:'PASS',assertions,acceptedSampleToSecondFrameOpportunityP95Ms:Math.round(p95*10)/10,samples:timings.length,scope:'actual Chrome local synthetic fixture, no HA/BLE; frame opportunity is not proof of actual pixel latency',version:'0.5.1'};
+  results.textContent=JSON.stringify(report,null,2);document.title='PASS — Xparkle0.5.1 local browser tests';window.fixtureResult=report;
+ }catch(error){results.textContent='FAIL: '+error.message;document.title='FAIL — Xparkle0.5.1 local browser tests';}
  document.getElementById('native').onclick=()=>{card.setConfig(config);sample(-35,27);};document.getElementById('mint').onclick=()=>{card.setConfig({...config,appearance:'mint'});sample(-35,27);};
  document.getElementById('front').onclick=()=>q('xp-view-front').click();document.getElementById('rear').onclick=()=>q('xp-view-rear').click();document.getElementById('top').onclick=()=>q('xp-view-top').click();
  document.getElementById('fresh').onclick=()=>sample();document.getElementById('tilted').onclick=()=>sample(-35,27);

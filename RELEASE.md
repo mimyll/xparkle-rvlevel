@@ -1,7 +1,7 @@
-# 0.5.0
+# 0.5.1
 
-The optional caravan card adds blue raise arrows, orange lower arrows and two illustrative spirit levels. The bubble points to the high side. Fixed endpoint labels keep physical directions clear in front/rear/top views. Each axis uses the configured tolerance, while the overall green status requires both axes. Stale or unavailable data hides bubbles and removes directional styling. Reload each browser/Companion frontend after updating.
+Fix connections being rejected after a Home Assistant patch update. New or untested HA Core versions no longer fail just because their version string differs from the recorded reference. ESPHome admission checks actual Bluetooth APIs, bound device identity, active registered sources, target ownership and free capacity. Package versions are diagnostic information, collected once off the event loop; this also fixes metadata filesystem warnings.
 
-Built-in HA Tile/Entities examples remain the default. Native appearance and opt-in mint remain per-card choices; dashboards/resources are not rewritten. No new backend measurement, option, entity, connection, device command or calibrated angle scale is introduced.
+Failed admission reports only allowlisted reason codes. The conservative local BlueZ teardown-confirmation limitation remains explicit; unverified cleanup cannot be bypassed. No new device command, scanner, automatic reconnect or pairing is introduced.
 
-Before updating, stop measurements, confirm cleanup and successful native unload, retain old component source, update through Marketplace and restart while disabled. Enable the same entry afterward. The eight native options remain compatible with 0.4. Physical accuracy, output signs, internal sensor cadence and battery life remain unverified. Calibration remains disabled. This repository is added by link only; it is not in the default catalog.
+All existing entities/options/cache/card appearances are retained. Before updating, stop measurements, confirm cleanup, disable and verify unload, retain exact old component source, update through Marketplace and restart while still disabled. Verify and enable the same entry. Do not remove/re-add it. Physical accuracy, sample age, movement latency and battery lifetime remain unverified. This repository is manually added only; no default catalog submission.

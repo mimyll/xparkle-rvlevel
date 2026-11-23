@@ -84,7 +84,7 @@ async def test_literal_read_uuid_and_gatt_metadata_gate(adapter,monkeypatch,case
     service=SimpleNamespace(characteristics=[] if case=='wrong_member' else [char])
     services=SimpleNamespace(get_service=lambda uuid: None if case=='wrong_service' else service,
                              get_characteristic=lambda uuid:char)
-    client=SimpleNamespace(services=services,read_gatt_char=AsyncMock(return_value=b'payload'))
+    client=SimpleNamespace(services=services,connect=AsyncMock(),disconnect=AsyncMock(),is_connected=False,read_gatt_char=AsyncMock(return_value=b'payload'))
     monkeypatch.setattr(m,'HaBleakClientWrapper',lambda *a,**k:client)
     transport=m.HATransport(hass,data)
     assert transport.compatible() is (case=='valid')
@@ -102,7 +102,7 @@ async def test_diagnostics_exact_allowlist_omits_proxy_and_transport_error(adapt
     entry.runtime_data=Session(lambda:Broken(),limits=FAST)
     await entry.runtime_data.start();await until(lambda:entry.runtime_data.safe)
     result=await diag.async_get_config_entry_diagnostics(None,entry)
-    assert set(result)=={'runtime_versions','adapter_selection','session_status','stop_reason','requested','mode','connected','owned_operations_pending','session_task_pending','cleanup_confirmed','read_count','connection_attempts','auto_stop_seconds','poll_interval_seconds','battery_refresh_hours','battery_last_received','last_received','sensor_sample_age','physical_direction_mapping','cadence','fresh_timeout_seconds','read_duration_seconds','timing_sample_limit','sample_interval_seconds','speed_test_report'}
+    assert set(result)=={'runtime_versions','runtime_review_status','runtime_admission_policy','adapter_selection','session_status','stop_reason','requested','mode','connected','owned_operations_pending','session_task_pending','cleanup_confirmed','read_count','connection_attempts','auto_stop_seconds','poll_interval_seconds','battery_refresh_hours','battery_last_received','last_received','sensor_sample_age','physical_direction_mapping','cadence','fresh_timeout_seconds','read_duration_seconds','timing_sample_limit','sample_interval_seconds','speed_test_report'}
     assert 'PRIVATE' not in json.dumps(result)
     assert result['sensor_sample_age']=='unknown' and result['stop_reason']=='connection_or_read_error'
 

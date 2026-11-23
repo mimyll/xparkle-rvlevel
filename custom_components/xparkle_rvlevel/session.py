@@ -16,6 +16,17 @@ SPEED_STAGES = (1.0, 0.5, 0.25, 0.1)
 SPEED_READS_PER_STAGE = 8
 
 
+class TransportAdmissionError(Exception):
+    """Allowlisted adapter rejection, without names, addresses or raw errors."""
+
+    def __init__(self, reason="route_unavailable"):
+        self.reason = reason if reason in {
+            "route_unavailable", "required_bluetooth_api_unavailable",
+            "local_disconnect_confirmation_unavailable",
+        } else "route_unavailable"
+        super().__init__(self.reason)
+
+
 class Transport(Protocol):
     """Only operations permitted by the read-only session."""
 
@@ -412,6 +423,8 @@ class Session:
             pass
         except asyncio.CancelledError:
             self.reason = "cancelled"
+        except TransportAdmissionError as error:
+            self.reason = error.reason
         except TimeoutError:
             self.reason = "operation_timeout"
         except ValueError:

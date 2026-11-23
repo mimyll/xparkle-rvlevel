@@ -157,7 +157,7 @@ async def test_static_registration_is_one_public_file_and_calibration_absent():
     assert await async_setup(hass,{})
     registered=hass.http.async_register_static_paths.await_args.args[0]
     assert len(registered)==1 and Path(registered[0].path).is_file()
-    assert registered[0].url_path=='/xparkle_rvlevel/0.5.0/xparkle-card.js'
+    assert registered[0].url_path=='/xparkle_rvlevel/0.5.1/xparkle-card.js'
     component=Path(__file__).parents[1]/'custom_components/xparkle_rvlevel'
     assert (component/'brand/icon.png').read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
     assert not (component/'calibration.py').exists()
@@ -200,7 +200,7 @@ async def test_actual_native_static_route_serves_only_exact_public_file(tmp_path
     client=TestClient(TestServer(http.app,host='127.0.0.1'))
     try:
         await client.start_server()
-        response=await client.get('/xparkle_rvlevel/0.5.0/xparkle-card.js')
+        response=await client.get('/xparkle_rvlevel/0.5.1/xparkle-card.js')
         expected=Path(__file__).parents[1]/'custom_components/xparkle_rvlevel/frontend/xparkle-card.js'
         assert response.status==200 and await response.read()==expected.read_bytes()
         for method in ('get','head'):
@@ -211,8 +211,8 @@ async def test_actual_native_static_route_serves_only_exact_public_file(tmp_path
         assert response.status==200 and await response.read()==expected.read_bytes()
         for path in ('/xparkle_rvlevel/','/xparkle_rvlevel/manifest.json','/xparkle_rvlevel/xparkle-card.js/../manifest.json'):
             assert (await client.get(path)).status==404
-        for path in ('/xparkle_rvlevel/0.5.0/','/xparkle_rvlevel/0.5.0/manifest.json',
-                     '/xparkle_rvlevel/0.5.0/xparkle-card.js/../manifest.json'):
+        for path in ('/xparkle_rvlevel/0.5.1/','/xparkle_rvlevel/0.5.1/manifest.json',
+                     '/xparkle_rvlevel/0.5.1/xparkle-card.js/../manifest.json'):
             response=await client.get(path)
             assert response.status==404
     finally:

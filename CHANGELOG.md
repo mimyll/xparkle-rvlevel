@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+
+- Remove exact HA Core/runtime-version rejection for capable ESPHome routes.
+- Keep actual identity, backend/API capability, ownership, capacity and cleanup admission checks.
+- Collect optional package metadata once off-loop and report a detached diagnostic snapshot.
+- Add allowlisted admission reasons and explicit local BlueZ release-confirmation limitation.
+- Exercise the HA patch-update regression and metadata cancellation/failure boundaries.
+
 ## 0.5.0
 
 - Distinct blue raise and orange lower arrows, retaining symbols and a text legend.

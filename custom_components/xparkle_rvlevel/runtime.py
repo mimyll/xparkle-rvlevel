@@ -1,5 +1,6 @@
 """Native delayed scheduling and cached battery persistence, without radio I/O."""
 from datetime import datetime, timedelta, timezone
+import asyncio
 from dataclasses import dataclass, field
 from collections.abc import Callable
 
@@ -32,6 +33,8 @@ class Owner:
 class DomainState:
     owners: dict[str, Owner] = field(default_factory=dict)
     stores: dict[str, Store] = field(default_factory=dict)
+    runtime_versions: dict[str, str] | None = None
+    runtime_versions_future: asyncio.Future | None = None
 
 
 def domain_state(hass):

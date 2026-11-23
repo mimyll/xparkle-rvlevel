@@ -43,7 +43,7 @@ def test_native_local_shape_and_mixed_routes_need_no_esphome_for_local_only(adap
     monkeypatch.setattr(bt,"async_scanner_devices_by_address",lambda *a,**k:paths)
     if not mixed:
         hass.config_entries.async_entries = lambda *a:[]
-    assert m.resolve(hass,data) == "synthetic_device"
+    assert m.resolve(hass,data).address == data["address"]
 
 
 def test_newer_unreviewed_local_bluez_is_rejected_even_with_supported_remote(adapter, monkeypatch):
@@ -52,9 +52,9 @@ def test_newer_unreviewed_local_bluez_is_rejected_even_with_supported_remote(ada
     remote = bt.async_scanner_devices_by_address(hass,data["address"])[0]
     paths = [remote,local_path(m,data)]
     monkeypatch.setattr(m.sys,"platform","linux")
-    versions = m.runtime_versions()
+    versions = m.runtime_versions(hass)
     versions["bleak"] = "3.1.0"
-    monkeypatch.setattr(m,"runtime_versions",lambda:versions)
+    monkeypatch.setattr(m,"runtime_versions",lambda hass=None:versions)
     monkeypatch.setattr(bt,"async_current_scanners",lambda *a:[p.scanner for p in paths])
     monkeypatch.setattr(bt,"async_scanner_devices_by_address",lambda *a,**k:paths)
     with pytest.raises(m.RouteUnavailable): m.resolve(hass,data)
@@ -79,7 +79,7 @@ def test_route_capability_ownership_and_identity_fail_closed(adapter, monkeypatc
 async def test_unsupported_route_appearing_before_connect_prevents_any_native_dispatch(adapter,monkeypatch):
     m,bt = adapter
     hass,data = route(m,bt,monkeypatch)
-    client = SimpleNamespace(connect=AsyncMock(),is_connected=False)
+    client = SimpleNamespace(connect=AsyncMock(),disconnect=AsyncMock(),read_gatt_char=AsyncMock(),is_connected=False)
     monkeypatch.setattr(m,"HaBleakClientWrapper",lambda *a,**k:client)
     transport = m.HATransport(hass,data)
     path = bt.async_scanner_devices_by_address(hass,data["address"])[0]
@@ -89,14 +89,14 @@ async def test_unsupported_route_appearing_before_connect_prevents_any_native_di
     assert transport.cleanup_confirmed
 
 
-@pytest.mark.parametrize("package", ["homeassistant","habluetooth","bleak-esphome","aioesphomeapi"])
-def test_unreviewed_runtime_versions_do_not_dispatch(adapter,monkeypatch,package):
+@pytest.mark.parametrize("package", ["homeassistant","habluetooth","bleak","bleak-esphome","aioesphomeapi"])
+def test_unreviewed_remote_runtime_versions_do_not_block_capable_route(adapter,monkeypatch,package):
     m,bt=adapter
     hass,data=route(m,bt,monkeypatch)
-    versions=m.runtime_versions()
+    versions=m.runtime_versions(hass)
     versions[package]="999.0.0"
-    monkeypatch.setattr(m,"runtime_versions",lambda:versions)
-    with pytest.raises(m.RouteUnavailable):m.resolve(hass,data)
+    monkeypatch.setattr(m,"runtime_versions",lambda hass=None:versions)
+    assert m.resolve(hass,data).address == data["address"]
 
 
 @pytest.mark.parametrize("case", ["pending", "missing", "unlisted_owner", "invalid_free"])

@@ -17,7 +17,7 @@ async def async_setup(hass, config):
     from pathlib import Path
     from homeassistant.components.http import StaticPathConfig
     await hass.http.async_register_static_paths([StaticPathConfig(
-        "/xparkle_rvlevel/0.5.0/xparkle-card.js",
+        "/xparkle_rvlevel/0.5.1/xparkle-card.js",
         str(Path(__file__).parent / "frontend" / "xparkle-card.js"), True)])
     from .card import XparkleCardView
     hass.http.register_view(XparkleCardView())
@@ -32,6 +32,8 @@ async def async_setup_entry(hass, entry):
     from .runtime import Owner, domain_state, battery_store, restore_battery, register_schedule
     from .config_flow import OPTIONS_SCHEMA
     from homeassistant.exceptions import ConfigEntryNotReady
+    from .compatibility import async_load_runtime_versions
+    await async_load_runtime_versions(hass)
     state = domain_state(hass)
     address = entry.data[CONF_ADDRESS].upper()
     old_owner = state.owners.get(address)

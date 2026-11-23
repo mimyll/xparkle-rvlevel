@@ -4,7 +4,7 @@
 
 An independent, read-only Home Assistant integration for compatible Xparkle RV level sensors. It provides manually controlled measurements, optional scheduled battery reads and advisory levelling estimates. It is not affiliated with the device manufacturer.
 
-**Early 0.5.0 release.** Bluetooth compatibility is deliberately restricted to the runtime matrix below. Physical direction mapping, angle accuracy, sensor-internal sample age, movement-to-display latency and battery lifetime are not established by this release.
+**Early 0.5.1 release.** Connection admission uses the actual Bluetooth capabilities described below. Physical direction mapping, angle accuracy, sensor-internal sample age, movement-to-display latency and battery lifetime are not established by this release.
 
 ## Install and update
 
@@ -17,11 +17,11 @@ The public repository uses the standard `custom_components/xparkle_rvlevel/` lay
 
 ### Updating an existing installation
 
-Before updating, turn Measurement off and confirm **Session status: idle**, **Connection: off**, and diagnostics **cleanup_confirmed: true**, with no pending owned work. Disable the existing integration and verify it unloaded successfully. Keep a component-only copy of the old source outside `custom_components` and record current options. Then use Marketplace to download the release, check HA configuration, and perform a normal restart while the entry remains disabled. Enable the same entry afterward. Do not remove/re-add it: upgrades retain the existing entry, entity IDs, options, battery cache and history.
+Before updating, turn Measurement off and confirm **Connection: off**, diagnostics **cleanup_confirmed: true**, and no owned task or pending work. Session status should be idle; the preconnection version-gate error fixed in 0.5.1 is also safe to update when these cleanup checks pass and connection attempts/reads are both zero. Do not start a measurement just to clear that error. Disable the existing integration and verify it unloaded successfully. Keep a component-only copy of the old source outside `custom_components` and record current options. Then use Marketplace to download the release, check HA configuration, and perform a normal restart while the entry remains disabled. Enable the same entry afterward. Do not remove/re-add it: upgrades retain the existing entry, entity IDs, options, battery cache and history.
 
 Source replacement is not safe while a session or uncertain cleanup remains active. Marketplace's update notification alone does not establish those prerequisites. Version 0.5 does not change the native option schema or any existing entity identity. Measurement stays off after restart; periodic battery work is first due one full configured interval later.
 
-For manual installation, the release asset `xparkle-rvlevel-0.5.0.zip` contains `custom_components/xparkle_rvlevel/`. Compare `SHA256SUMS`, preserve old source and copy only that folder. Never upload the source archive into HA as an integration.
+For manual installation, the release asset `xparkle-rvlevel-0.5.1.zip` contains `custom_components/xparkle_rvlevel/`. Compare `SHA256SUMS`, preserve old source and copy only that folder. Never upload the source archive into HA as an integration.
 
 ### Recovering the previous installation
 
@@ -59,15 +59,15 @@ Positive correction means raise that reference point while holding its opposite 
 
 ## Bluetooth compatibility
 
-HA chooses the connection adapter automatically; this integration adds no scanner, direct proxy client or adapter setting. Configure sources under **Settings → Devices & services → Bluetooth**, and ESPHome proxies under their ESPHome entries. Every selectable route must match the reviewed backend/runtime set, have coherent capacity information and no pending native attempt/allocated target; otherwise the integration fails closed.
+HA chooses the connection adapter automatically; this integration adds no scanner, direct proxy client or adapter setting. Configure sources under **Settings → Devices & services → Bluetooth**, and ESPHome proxies under their ESPHome entries.
 
-| Route | Required runtime |
-|---|---|
-| All routes | HA **2026.11.0**, habluetooth **7.1.2** |
-| ESPHome proxy | bleak-esphome **4.0.0**, aioesphomeapi **46.25.0**, Bleak **3.0.2 or 3.1.0** |
-| Local Linux BlueZ USB/UART | Bleak **3.0.2** |
+**A newer or untested HA Core version is not a reason to reject a connection.** Admission checks the actual APIs, fresh bound device identity, registered/loaded connectable sources, pending connections, target ownership and coherent free capacity on every route HA may select. These checks are repeated immediately before native connection dispatch. ESPHome routes have no package-version allowlist. Missing or changed required capabilities produce an allowlisted diagnostic reason without raw device/error details.
 
-`homeassistant` in hacs.json is only a minimum install version; it cannot express this exact runtime matrix. Newer HA/dependency versions are deliberately rejected until reviewed. One installed ESPHome device path has finite live-read evidence. Local BlueZ has source/synthetic evidence, not hardware acceptance. Other remote backends, Windows/macOS and broader device models are not claimed supported. Older proxies with incomplete allocation reports are rejected without changing firmware.
+Package versions are collected once through HA's executor and cached for diagnostics. `runtime_review_status` describes whether observed metadata matches the recorded reference combination; it is not an admission decision or proof that every adapter was tested. Unavailable metadata alone does not block an ESPHome route. Setup and diagnostics never force a measurement.
+
+The original recorded reference was HA2026.11.0/habluetooth7.1.2, bleak-esphome4.0.0/aioesphomeapi46.25.0, with remote Bleak3.0.2 or3.1.0. One installed ESPHome path has earlier finite live-read evidence. New releases are tested synthetically with HA2026.11.0 and2026.11.2; this does not establish physical compatibility with every future version or device.
+
+**Local Linux BlueZ limitation:** the existing Bleak3.0.2 disconnect contract remains the narrow legacy fallback. Bleak3.1.0 can report local disconnection after D-Bus loss without a verified target release. Other local implementations currently have no verified target-specific teardown confirmation in this adapter, and return `local_disconnect_confirmation_unavailable` before connecting. This is a local release-confirmation limitation, not an HA Core version ban or a claim that every later local version is incompatible. Unknown backends, Windows/macOS and proxies without coherent allocation/ownership information remain unsupported. Do not remove/re-add the entry or bypass ownership/cleanup checks to work around a refusal.
 
 ## Security and diagnostics
 
