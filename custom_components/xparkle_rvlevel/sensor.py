@@ -133,10 +133,13 @@ class LevellingSensor(XparkleEntity, SensorEntity):
             # Both axes and freshness belong to one immutable read sample.
             values = self._values()
             tolerance = self.entry.options.get("level_tolerance_cm", UI_DEFAULTS["level_tolerance_cm"])
+            longitudinal_tolerance = self.entry.options.get(
+                "longitudinal_tolerance_cm", UI_DEFAULTS["longitudinal_tolerance_cm"])
             ready = self.native_value == "ready"
             return {"entry_id": self.entry.entry_id,
                 "vehicle_type": self.entry.options.get("vehicle_type", UI_DEFAULTS["vehicle_type"]),
                 "level_tolerance_cm": tolerance,
+                "longitudinal_tolerance_cm": longitudinal_tolerance,
                 "mount_position": self.geometry.mount_position,
                 "width_cm": self.geometry.width_cm, "length_cm": self.geometry.length_cm,
                 "directions_confirmed": self.geometry.directions_confirmed,
@@ -150,7 +153,7 @@ class LevellingSensor(XparkleEntity, SensorEntity):
                 "expires_at": session.expires_at.isoformat() if session.expires_at else None,
                 "longitudinal_mm": -values["front_correction"] if ready else None,
                 "transverse_mm": -values["left_correction"] if ready else None,
-                "within_tolerance": (values["longitudinal_difference"] <= tolerance * 10
+                "within_tolerance": (values["longitudinal_difference"] <= longitudinal_tolerance * 10
                     and values["transverse_difference"] <= tolerance * 10) if ready else None,
                 "sensor_sample_age": "unknown"}
         if self.key not in LEVEL_KEYS:

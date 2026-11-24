@@ -71,7 +71,7 @@ def test_immediate_previous_fixture_matches_published_050():
 def test_package_and_metadata_ignore_inventory_iteration_order(tmp_path,monkeypatch):
     copy=tmp_path/'public';shutil.copytree(ROOT,copy,ignore=shutil.ignore_patterns('.git','__pycache__','build','ci-results'))
     inventory=verifier.verify(copy)
-    outputs=['xparkle-rvlevel-0.5.1.zip','component-files.json','SHA256SUMS']
+    outputs=['xparkle-rvlevel-0.6.0.zip','component-files.json','SHA256SUMS']
     monkeypatch.setattr(verifier,'verify',lambda root:inventory)
     verifier.build(copy);before={name:(copy/'build'/name).read_bytes() for name in outputs}
     monkeypatch.setattr(verifier,'verify',lambda root:dict(reversed(list(inventory.items()))))

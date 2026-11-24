@@ -4,7 +4,7 @@
 
 An independent, read-only Home Assistant integration for compatible Xparkle RV level sensors. It provides manually controlled measurements, optional scheduled battery reads and advisory levelling estimates. It is not affiliated with the device manufacturer.
 
-**Early 0.5.1 release.** Connection admission uses the actual Bluetooth capabilities described below. Physical direction mapping, angle accuracy, sensor-internal sample age, movement-to-display latency and battery lifetime are not established by this release.
+**Version 0.6.0.** Connection admission uses the actual Bluetooth capabilities described below. Physical direction mapping, angle accuracy, sensor-internal sample age, movement-to-display latency and battery lifetime are not established by this release.
 
 ## Install and update
 
@@ -21,11 +21,11 @@ Before updating, turn Measurement off and confirm **Connection: off**, diagnosti
 
 Source replacement is not safe while a session or uncertain cleanup remains active. Marketplace's update notification alone does not establish those prerequisites. Version 0.5 does not change the native option schema or any existing entity identity. Measurement stays off after restart; periodic battery work is first due one full configured interval later.
 
-For manual installation, the release asset `xparkle-rvlevel-0.5.1.zip` contains `custom_components/xparkle_rvlevel/`. Compare `SHA256SUMS`, preserve old source and copy only that folder. Never upload the source archive into HA as an integration.
+For manual installation, the release asset `xparkle-rvlevel-0.6.0.zip` contains `custom_components/xparkle_rvlevel/`. Compare `SHA256SUMS`, preserve old source and copy only that folder. Never upload the source archive into HA as an integration.
 
 ### Recovering the previous installation
 
-With cleanup confirmed and the entry disabled/unloaded, restore its saved exact previous component source, run the HA configuration check and restart normally while still disabled. The eight native options remain compatible, including fractional cadence. Verify options before re-enabling the same entry. If a newly created optional card resource/view was changed, restore only its saved unchanged object and reload the browser. No HA storage edits, full-instance restore or entry recreation is needed. Recorder/history preservation is a native update process contract; synthetic lifecycle tests are not a Recorder database test.
+With cleanup confirmed and the entry disabled/unloaded, restore its saved exact previous component source, run the HA configuration check and restart normally while still disabled. If a 0.6.0 options save added `longitudinal_tolerance_cm`, save the eight recorded compatible options through the restored 0.5.1 native options flow before enabling the same entry. Verify options before enabling. If a newly created optional card resource/view was changed, restore only its saved unchanged object and reload the browser. No HA storage edits, full-instance restore or entry recreation is needed. Recorder/history preservation is a native update process contract; synthetic lifecycle tests are not a Recorder database test.
 
 ## Standard Home Assistant appearance
 
@@ -37,7 +37,7 @@ The quieter green design is an explicit per-card choice: `appearance: mint`, as 
 
 Old versioned 0.3 resource URLs should be replaced with the stable URL when upgrading. Keep the selected card appearance explicitly (`mint` to preserve the earlier green design). No dashboard/resource is silently rewritten at startup.
 
-The optional graphic card colors correction arrows **blue for raise** and **orange for lower**, with arrow symbols and a text key. Its two illustrative spirit levels use fixed physical endpoints: **Vasen–Oikea** (left–right in the direction of travel) and **Perä–Keula** (rear–front). The bubble moves toward the **high end**; the correction arrow tells you which end to raise or lower. The displays share one fresh coherent sample. Each axis turns green within the configured height tolerance; the overall status requires both axes. Missing or stale data hides the bubbles. Bubble travel is illustrative, saturates at a one-percent slope, and has no calibrated degree scale.
+The cross level places one bubble toward the high side and end, with the front at the top. The bubble stops at ±1° on each axis. The angle readouts still show the measured magnitudes up to the supported 45° limit. The card shows corrections in 0.25 cm display steps, with blue arrows for raising and orange for lowering. The front and rear views mirror the illustration while preserving physical side labels. The top view shows four relative corner raises with the highest corner as the zero reference. All displays use the same fresh sample.
 
 ## Measurement and battery
 
@@ -55,7 +55,7 @@ Set calculation reference spans along the rigid body in centimetres: width 1–5
 
 Mount location is front/rear/right/left in the direction of travel. It records location and moves the marker; it does not modify the device's stored orientation or rotate already-corrected output. Named corrections require explicit confirmation of the CURRENT output: uphill flag on means front high, left-tilt flag on means left low. A mount change clears that confirmation. Do not guess it from physical side alone.
 
-Positive correction means raise that reference point while holding its opposite fixed. Opposite-end corrections are alternatives; applying both full amounts doubles the requested correction. Corner figures are advisory reference geometry, not measured jack travel or instructions to lift with corner steadies. Tolerance defaults to 0.25 cm (2.5 mm), configurable 0.05–5 cm. Both raw absolute reference differences must meet it. Stopped, stale, missing or unconfirmed data never show green. Calibration confirmation remains disabled because its command/effect has not been verified; no calibration command or software zero is implemented.
+Positive correction means raise that reference point while holding its opposite fixed. Opposite-end corrections are alternatives; applying both full amounts doubles the requested correction. Corner figures are advisory reference geometry, not measured jack travel or instructions to lift with corner steadies. The side-to-side tolerance defaults to 0.25 cm and keeps the existing saved value. Front-to-rear tolerance defaults to 2.00 cm and can be set in integration options. Both accept 0.05–5 cm and are checked against unrounded differences. The existing Home Assistant distance entities retain millimetres. Stopped, stale, missing or unconfirmed data never show green. Calibration confirmation remains disabled because its command/effect has not been verified; no calibration command or software zero is implemented.
 
 ## Bluetooth compatibility
 

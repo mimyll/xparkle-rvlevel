@@ -156,7 +156,8 @@
           "vehicle_length_cm": "Longitudinal reference span (cm, 0 = unset)",
           "mount_position": "Sensor mounting location (record only)",
           "directions_confirmed": "Current directions confirmed for this mounting",
-          "level_tolerance_cm": "Level tolerance (cm)",
+          "level_tolerance_cm": "Side-to-side tolerance (cm)",
+          "longitudinal_tolerance_cm": "Front-to-rear tolerance (cm)",
           "vehicle_type": "Vehicle illustration"
         },
         "data_description": {

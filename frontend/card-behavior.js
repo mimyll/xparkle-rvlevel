@@ -1,9 +1,15 @@
 class XparkleLevelCard extends HTMLElement {
   constructor() {
     super(); this.attachShadow({mode:'open'}); this.shadowRoot.innerHTML=TEMPLATE;
-    this._view='front'; this._pending=false; this._online=false; this._latest=-Infinity;this._lastReceived=-Infinity;this._lastSequence=-1;this._blockedThrough=-Infinity;
+    this._view='top'; this._pending=false; this._online=false; this._latest=-Infinity;this._lastReceived=-Infinity;this._lastSequence=-1;this._blockedThrough=-Infinity;
     this._paints=[]; this._renderCount=0;this._acceptedSamples=0;this._coalescedSamples=0;
     const q=id=>this.shadowRoot.getElementById(id); this.q=q;
+    for(const value of this.shadowRoot.querySelectorAll('.xp-correction strong')){
+      const icon=document.createElement('ha-icon');
+      icon.setAttribute('aria-hidden','true');
+      icon.hidden=true;
+      value.replaceChildren(icon,document.createTextNode('—'));
+    }
     for(const view of ['front','rear','top']) q('xp-view-'+view).addEventListener('click',()=>{this._view=view;this._closeCalibration();this._render();});
     q('xp-session').addEventListener('click',()=>this._action('switch',this._isOn()||this._nonManualBusy()?'turn_off':'turn_on',this._config?.measurement_switch));
     q('xp-renew').addEventListener('click',()=>this._action('button','press',this._config?.renew_button));
@@ -60,7 +66,7 @@ class XparkleLevelCard extends HTMLElement {
     if(!this._online||this._pending||!this._config||!entity)return;
     this._closeCalibration();this._pending=true;this.q('xp-action-error').hidden=true;this._render();
     try{await this._hass.callService(domain,service,{entity_id:entity,...extra});}
-    catch{this.q('xp-action-error').textContent='Toiminto ei onnistunut. Tarkista yhteys ja mittauksen tila.';this.q('xp-action-error').hidden=false;}
+    catch{this.q('xp-action-error').textContent='Toiminto epäonnistui. Tarkista yhteys.';this.q('xp-action-error').hidden=false;}
     finally{this._pending=false;this._render();}
   }
   _render(){
@@ -69,63 +75,117 @@ class XparkleLevelCard extends HTMLElement {
     const q=this.q,a=this._source?.attributes||{},now=Date.now();
     const received=Date.parse(a.received_at),age=(now-received)/1000;
     const ttl=this._number(a.fresh_timeout_seconds),tol=this._number(a.level_tolerance_cm),p=this._number(a.longitudinal_mm),r=this._number(a.transverse_mm),width=this._number(a.width_cm),length=this._number(a.length_cm);
-    const toleranceValid=Number.isFinite(tol)&&tol>=0.05&&tol<=5;
+    const lengthTol=this._number(Object.hasOwn(a,'longitudinal_tolerance_cm')?a.longitudinal_tolerance_cm:tol);
+    const isTolerance=value=>Number.isFinite(value)&&value>=0.05&&value<=5;
+    const toleranceValid=isTolerance(tol)&&isTolerance(lengthTol);
     // The backend supports at most 45 degrees. Allow only floating-point noise
     // at that boundary; visual saturation must not admit impossible geometry.
     const plausible=(gap,span)=>Number.isFinite(gap)&&Math.abs(gap)<=span*10*(Math.SQRT1_2+1e-12);
     const valid=this._source?.state==='ready'&&this._online&&this._isOn()&&a.session_status==='measuring'&&a.mode==='manual'&&a.directions_confirmed===true&&Number.isFinite(age)&&age>=-0.1&&age<=ttl&&received>this._blockedThrough&&ttl>=1&&ttl<=10&&toleranceValid&&width>=1&&width<=500&&length>=1&&length<=2000&&plausible(p,length)&&plausible(r,width)&&['front','rear','left','right'].includes(a.mount_position)&&Date.parse(a.expires_at)>now;
-    const level=valid&&toleranceValid?(Math.abs(p)<=tol*10&&Math.abs(r)<=tol*10?'ok':'adjust'):'unknown';
-    const fmt=new Intl.NumberFormat(this._hass.language||'fi',{maximumFractionDigits:1});
-    const magnitude=value=>Math.abs(value)>0&&Math.abs(value)<.05?'<'+fmt.format(.1):fmt.format(Math.abs(value));
-    const move=value=>!valid?'—':value===0?'0 mm':(value>0?'↑ ':'↓ ')+magnitude(value)+' mm';
-    const describe=value=>!valid?'Ei ajantasaista korjausta':value===0?'Ei korjausta':(value>0?'Nosta ':'Laske ')+magnitude(value)+' millimetriä';
-    const correction=(id,value)=>{const node=q(id);node.textContent=move(value);node.dataset.motion=!valid?'unknown':value>0?'up':value<0?'down':'zero';node.setAttribute('aria-label',describe(value));};
-    const frontView=this._view==='front',topView=this._view==='top';
-    for(const [id,value] of Object.entries({'xp-front-value':-p,'xp-rear-value':p,'xp-left-value':-r,'xp-right-value':r,'xp-front-inline':-p,'xp-rear-inline':p}))correction(id,value);
-    const gauge=(axis,gap,span,negative,positive,sign)=>{
-      const node=q('xp-gauge-'+axis),bubble=q('xp-bubble-'+axis),label=q('xp-gauge-'+axis+'-value');
-      node.dataset.level=!valid?'unknown':Math.abs(gap)<=tol*10?'ok':'adjust';bubble.hidden=!valid;
-      // Fixed physical axes: bubble points to the HIGH end, not the end to raise.
-      // One percent slope fills the illustrative travel; no calibrated scale.
-      const offset=valid?Math.max(-1,Math.min(1,sign*gap/(span*10)/.01))*40:0;
-      bubble.style.left=(50+offset)+'%';
-      const text=!valid?'Ei ajantasaista tietoa':gap===0?'Ei korkeuseroa':(gap<0?negative:positive)+' ylempänä · '+magnitude(gap)+' mm';
-      label.textContent=text;node.setAttribute('aria-label',(axis==='transverse'?'Sivukallistus. ':'Pituuskallistus. ')+text+(valid?(node.dataset.level==='ok'?'. Toleranssin sisällä.':'. Tasausta tarvitaan.'):'') );
+    const axisLevel=(gap,limit)=>!valid?'unknown':Math.abs(gap)<=limit*10?'ok':'adjust';
+    const sideLevel=axisLevel(r,tol), lengthLevel=axisLevel(p,lengthTol);
+    const level=!valid?'unknown':sideLevel==='ok'&&lengthLevel==='ok'?'ok':'adjust';
+    const fixed=new Intl.NumberFormat(this._hass.language||'fi',{minimumFractionDigits:2,maximumFractionDigits:2});
+    // Convert 2.5 mm steps to quarters of a centimetre after all geometry.
+    const magnitude=value=>Math.round(Math.abs(value)/2.5)/4;
+    const distance=value=>fixed.format(magnitude(value))+' cm';
+    const describe=value=>!valid?'Ei ajantasaista korjausta':!magnitude(value)?distance(value):(value>0?'Nosta ':'Laske ')+distance(value);
+    const correction=(id,value)=>{
+      const node=q(id);
+      const direction=magnitude(value)?(value>0?'up':'down'):'zero';
+      const icon=node.firstElementChild;
+      icon.hidden=!valid||direction==='zero';
+      const symbol=valid&&direction!=='zero'?(direction==='up'?'↑ ':'↓ '):'';
+      if(icon.textContent!==symbol)icon.textContent=symbol;
+      if(!icon.hidden)icon.setAttribute('icon',direction==='up'?'mdi:arrow-up':'mdi:arrow-down');
+      node.lastChild.data=valid?distance(value):'—';
+      node.dataset.motion=valid?direction:'unknown';
+      node.setAttribute('aria-label',describe(value));
     };
-    gauge('transverse',r,width,'Oikea','Vasen',-1);gauge('longitudinal',p,length,'Perä','Keula',1);
+    const frontView=this._view==='front',topView=this._view==='top';
+    correction('xp-front-inline',-p);
+    correction('xp-rear-inline',p);
+    // Add the rise from each low side and end, relative to the highest corner.
+    const frontRaise=Math.max(0,-p), rearRaise=Math.max(0,p);
+    const leftRaise=Math.max(0,-r), rightRaise=Math.max(0,r);
+    const corners=[
+      ['front-left','Vasen etukulma',frontRaise+leftRaise],
+      ['front-right','Oikea etukulma',frontRaise+rightRaise],
+      ['rear-left','Vasen takakulma',rearRaise+leftRaise],
+      ['rear-right','Oikea takakulma',rearRaise+rightRaise],
+    ];
+    for(const [id,,value] of corners)correction('xp-'+id,value);
+    // Inverse of the rigid-span geometry, using the same signed sample as the cm.
+    const degrees=(gap,span)=>Math.asin(gap/(span*10))*180/Math.PI;
+    const pitch=valid?degrees(p,length):0, roll=valid?degrees(r,width):0;
+    const offset=angle=>Math.max(-1,Math.min(1,angle))*42;
+    const plotBubble=q('xp-cross-bubble'), target=q('xp-cross-target');
+    q('xp-cross').dataset.level=level;
+    plotBubble.hidden=target.hidden=!valid;
+    // Left and front are positive axes; the image origin is at top left.
+    plotBubble.style.left=(50-offset(roll))+'%';
+    plotBubble.style.top=(50-offset(pitch))+'%';
+    if(valid){
+      const targetSize=(limit,span)=>2*offset(degrees(Math.min(limit*10,span*10),span))+'%';
+      target.style.width=targetSize(tol,width);
+      target.style.height=targetSize(lengthTol,length);
+    }
+    const gauge=(axis,gap,angle,state,negative,positive)=>{
+      const node=q('xp-gauge-'+axis);
+      node.dataset.level=state;
+      const high=gap===0?'':(gap<0?negative:positive)+' ylempänä · ';
+      const gapText=gap!==0&&!magnitude(gap)?'alle '+distance(2.5):distance(gap);
+      const outsideScale=Math.abs(angle)>1?' · yli asteikon':'';
+      q('xp-gauge-'+axis+'-value').textContent=valid
+        ?high+gapText+' · '+fixed.format(Math.abs(angle))+'°'+outsideScale
+        :'Ei ajantasaista tietoa';
+    };
+    gauge('transverse',r,roll,sideLevel,'Oikea','Vasen');
+    gauge('longitudinal',p,pitch,lengthLevel,'Perä','Keula');
     const kind=['caravan','tandem','motorhome','van'].includes(a.vehicle_type)?a.vehicle_type:'caravan';
     const plot=this.shadowRoot.querySelector('.xp-plot'),elevation=this.shadowRoot.querySelector('.xp-elevation'),vehicle=this.shadowRoot.querySelector('.xp-vehicle');
     vehicle.dataset.kind=kind;elevation.dataset.kind=kind;plot.dataset.level=elevation.dataset.level=level;elevation.dataset.view=this._view;
-    plot.hidden=!topView;elevation.hidden=topView;q('xp-top-arrow').hidden=!topView;q('xp-longitudinal').hidden=topView;
+    plot.hidden=!topView;elevation.hidden=topView;q('xp-longitudinal').hidden=topView;
     for(const view of ['front','rear','top'])q('xp-view-'+view).setAttribute('aria-pressed',String(view===this._view));
     q('xp-face-left-label').textContent=frontView?'Vaunun oikea':'Vaunun vasen';q('xp-face-right-label').textContent=frontView?'Vaunun vasen':'Vaunun oikea';
     correction('xp-face-left-value',frontView?r:-r);correction('xp-face-right-value',frontView?-r:r);
     const mount=a.mount_position;this.shadowRoot.querySelector('.xp-marker').dataset.side=mount;
     const faceMarker=q('xp-face-marker');faceMarker.hidden=!['left','right'].includes(mount);faceMarker.dataset.side=frontView?(mount==='right'?'left':'right'):mount;
-    const tilt=valid?Math.asin(Math.max(-1,Math.min(1,r/(width*10))))*180/Math.PI:0;
-    this.shadowRoot.querySelector('.xp-face').style.setProperty('--xp-tilt',(frontView?-tilt:tilt)+'deg');
-    q('xp-facing-note').textContent=topView?'Sivut kulkusuuntaan katsottuna.':frontView?'Edestä: kuvan vasen = vaunun oikea.':'Takaa: kuvan vasen = vaunun vasen.';
+    this.shadowRoot.querySelector('.xp-face').style.setProperty('--xp-tilt',(frontView?-roll:roll)+'deg');
     const text=valid?`Keula: ${describe(-p)}, perä: ${describe(p)}, vaunun vasen: ${describe(-r)}, vaunun oikea: ${describe(r)}.`:'Ei ajantasaista tasausohjetta.';
-    plot.setAttribute('aria-label','Ajoneuvo ylhäältä. '+text);elevation.setAttribute('aria-label','Ajoneuvo '+(frontView?'edestä. ':'takaa. ')+text);
-    q('xp-overall').dataset.level=level;
-    const statuses={dimensions_missing:'Syötä laskennan mitat asetuksissa',mount_missing:'Valitse anturin asennuspaikka',directions_unconfirmed:'Vahvista anturin nykyiset suunnat',unsupported_angle:'Kulma tuetun alueen ulkopuolella'};
-    const sessionLabels={connecting:'Yhdistetään anturiin…',stopping:'Suljetaan yhteyttä…',cleanup_unknown:'Yhteyden sulkeutumista ei vahvistettu',error:'Mittaus päättyi virheeseen'};
-    const diagnosticBusy=this._nonManualBusy();
-    q('xp-overall').textContent=!this._online?'Yhteys Home Assistantiin katkennut':diagnosticBusy?(a.mode==='speed_test'?'Rajattu nopeustesti käynnissä':'Paristotietojen haku käynnissä'):sessionLabels[a.session_status]||statuses[this._source?.state]||(!this._isOn()?'Mittaus suljettu':!toleranceValid?'Tarkista tasaustoleranssi':!valid?'Odotetaan tuoretta lukemaa':(level==='ok'?'Suorassa':'Tasausta tarvitaan')+' · toleranssi ±'+new Intl.NumberFormat(this._hass.language||'fi',{maximumFractionDigits:2}).format(tol)+' cm');
-    q('xp-session').querySelector('span').textContent=this._pending?'Odota…':diagnosticBusy?(a.mode==='speed_test'?'Lopeta nopeustesti':'Lopeta haku'):this._isOn()?'Lopeta mittaus':'Aloita mittaus';
-    const sw=this._hass.states[this._config.measurement_switch];q('xp-session').disabled=!this._online||this._pending||!sw||!['on','off'].includes(sw.state)||['stopping','cleanup_unknown'].includes(a.session_status);
-    q('xp-renew').disabled=!this._online||this._pending||!this._isOn()||a.mode!=='manual'||a.session_status!=='measuring';
-    const remaining=(Date.parse(a.expires_at)-now)/1000;
-    q('xp-session-label').textContent=Number.isFinite(age)&&age>=0?'Lukema '+fmt.format(age)+' s vanha':'Ei vastaanotettua lukemaa';
-    q('xp-session-label').nextElementSibling.textContent=this._isOn()&&Number.isFinite(remaining)?'Sulkeutuu '+Math.max(0,Math.ceil(remaining/60))+' min kuluttua':'Automaattinen sulku 10 min';
-    if(this.shadowRoot.activeElement!==q('xp-tolerance'))q('xp-tolerance').value=toleranceValid?String(tol).replace('.',','):'';
+    const cornerText=valid?corners.map(([,label,value])=>label+': '+describe(value)).join(', '):text;
+    plot.setAttribute('aria-label','Ajoneuvo ylhäältä. '+cornerText);
+    elevation.setAttribute('aria-label','Ajoneuvo '+(frontView?'edestä. ':'takaa. ')+text);
+    q('xp-correction-note').hidden=topView||!valid;
+    const manualOn=this._isOn(), diagnosticBusy=this._nonManualBusy();
+    q('xp-guidance').hidden=!manualOn||diagnosticBusy;
+    const overall=q('xp-overall');
+    overall.dataset.level=level;
+    const statuses={dimensions_missing:'Aseta vaunun mitat',mount_missing:'Valitse anturin asennuspaikka',directions_unconfirmed:'Vahvista anturin suunnat',unsupported_angle:'Kallistus liian suuri'};
+    const sessionLabels={connecting:'Yhdistetään…',stopping:'Katkaistaan yhteyttä…',cleanup_unknown:'Yhteyden sulkeutumista ei vahvistettu',error:'Mittaus epäonnistui'};
+    overall.textContent=!this._online?'Yhteys Home Assistantiin katkesi':diagnosticBusy?(a.mode==='speed_test'?'Nopeustesti käynnissä':'Luetaan paristotietoa…'):sessionLabels[a.session_status]||statuses[this._source?.state]||(!manualOn?'':!toleranceValid?'Tarkista toleranssit':!valid?'Odotetaan lukemaa…':level==='ok'?'Toleranssissa':'Säädä vaunua');
+    overall.hidden=!overall.textContent;
+    const session=q('xp-session');
+    session.querySelector('span').textContent=this._pending?'Odota…':diagnosticBusy?(a.mode==='speed_test'?'Lopeta nopeustesti':'Lopeta haku'):manualOn?'Lopeta mittaus':'Aloita mittaus';
+    session.setAttribute('aria-pressed',String(manualOn));
+    const sessionIcon=q('xp-session-icon');
+    const stop=manualOn||diagnosticBusy;
+    sessionIcon.setAttribute('icon',stop?'mdi:stop':'mdi:bluetooth');
+    sessionIcon.textContent=stop?'■':'◉';
+    const sw=this._hass.states[this._config.measurement_switch];
+    session.disabled=!this._online||this._pending||!sw||!['on','off'].includes(sw.state)||['stopping','cleanup_unknown'].includes(a.session_status);
+    const renew=q('xp-renew');
+    renew.hidden=!manualOn||a.mode!=='manual'||a.session_status!=='measuring';
+    renew.disabled=renew.hidden||!this._online||this._pending;
+    if(this.shadowRoot.activeElement!==q('xp-tolerance'))q('xp-tolerance').value=isTolerance(tol)?String(tol).replace('.',','):'';
+    q('xp-length-tolerance').value=isTolerance(lengthTol)?fixed.format(lengthTol):'';
     q('xp-kind').value=kind;q('xp-kind').disabled=q('xp-tolerance').disabled=!this._online||this._pending;
     q('xp-width').value=Number.isFinite(width)?width:'';q('xp-length').value=a.length_cm||'';q('xp-mount').value=mount||'';
     q('xp-cal-final').disabled=true;
   }
   getCardSize(){return 8;}
   getGridOptions(){return {columns:12,rows:'auto',min_columns:6};}
-  getRenderDiagnostics(){return {version:'0.5.1',renderCount:this._renderCount,acceptedSamples:this._acceptedSamples,coalescedSamples:this._coalescedSamples,acceptedSampleToFrameOpportunityMs:[...this._paints],metric:'accepted_coherent_sample_to_second_requestAnimationFrame_not_physical_pixel_latency'};}
+  getRenderDiagnostics(){return {version:'0.6.0',renderCount:this._renderCount,acceptedSamples:this._acceptedSamples,coalescedSamples:this._coalescedSamples,acceptedSampleToFrameOpportunityMs:[...this._paints],metric:'accepted_coherent_sample_to_second_requestAnimationFrame_not_physical_pixel_latency'};}
 }
 if(!customElements.get('xparkle-level-card'))customElements.define('xparkle-level-card',XparkleLevelCard);
 window.customCards=window.customCards||[];

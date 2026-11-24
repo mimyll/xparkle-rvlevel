@@ -50,6 +50,6 @@ async def test_options_form_native_serialization_and_submit():
     result = await flow.async_step_init()
     fields = probatio.to_field_list(result["data_schema"], custom_serializer=cv.custom_serializer)
     assert {f["name"]:f["default"] for f in fields} == {
-        "battery_refresh_hours":24, "measurement_interval_seconds":0.5, "level_tolerance_cm":0.25, "vehicle_type":"caravan", "vehicle_width_cm":0, "vehicle_length_cm":0, "mount_position":"not_set", "directions_confirmed":False}
+        "battery_refresh_hours":24, "measurement_interval_seconds":0.5, "level_tolerance_cm":0.25, "longitudinal_tolerance_cm":2.0, "vehicle_type":"caravan", "vehicle_width_cm":0, "vehicle_length_cm":0, "mount_position":"not_set", "directions_confirmed":False}
     result = await flow.async_step_init({"battery_refresh_hours":0,"measurement_interval_seconds":5})
-    assert result["data"] == {"battery_refresh_hours":0,"measurement_interval_seconds":5, "level_tolerance_cm":0.25, "vehicle_type":"caravan", "vehicle_width_cm":0, "vehicle_length_cm":0, "mount_position":"not_set", "directions_confirmed":False}
+    assert result["data"] == {"battery_refresh_hours":0,"measurement_interval_seconds":5, "level_tolerance_cm":0.25, "longitudinal_tolerance_cm":2.0, "vehicle_type":"caravan", "vehicle_width_cm":0, "vehicle_length_cm":0, "mount_position":"not_set", "directions_confirmed":False}

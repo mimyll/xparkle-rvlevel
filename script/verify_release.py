@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def verify(root):
     allowed=set(json.loads((root/'ci/public-files.json').read_text()))
     expected=json.loads((root/'ci/component-files.json').read_text())
-    generated={'build/xparkle-rvlevel-0.5.1.zip','build/SHA256SUMS','build/component-files.json','ci-results/product-tests.xml'}
+    generated={'build/xparkle-rvlevel-0.6.0.zip','build/SHA256SUMS','build/component-files.json','ci-results/product-tests.xml'}
     actual=set()
     for folder,dirs,files in os.walk(root,followlinks=False):
         base=Path(folder)
@@ -30,7 +30,7 @@ def verify(root):
     generator=runpy.run_path(str(root/'script/build_frontend.py'))
     if (component/'frontend/xparkle-card.js').read_bytes()!=generator['assemble'](root).encode():raise ValueError('Frontend source and generated bundle differ')
     manifest=json.loads((component/'manifest.json').read_text())
-    if manifest['version']!='0.5.1' or manifest['codeowners']!=['@mimyll'] or manifest['issue_tracker']!='https://github.com/mimyll/xparkle-rvlevel/issues':raise ValueError('Public metadata mismatch')
+    if manifest['version']!='0.6.0' or manifest['codeowners']!=['@mimyll'] or manifest['issue_tracker']!='https://github.com/mimyll/xparkle-rvlevel/issues':raise ValueError('Public metadata mismatch')
     if json.loads((root/'hacs.json').read_text()).get('zip_release',False):raise ValueError('Expected repository delivery, not zip_release')
     for f in component.rglob('*.py'):ast.parse(f.read_text())
     for f in component.rglob('*.json'):json.loads(f.read_text())
@@ -38,7 +38,7 @@ def verify(root):
 
 def build(root):
     inventory=verify(root);out=root/'build';out.mkdir(exist_ok=True)
-    name='xparkle-rvlevel-0.5.1.zip'
+    name='xparkle-rvlevel-0.6.0.zip'
     with zipfile.ZipFile(out/name,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
         for rel in sorted(inventory):
             info=zipfile.ZipInfo('custom_components/xparkle_rvlevel/'+rel,(1980,1,1,0,0,0));info.external_attr=(stat.S_IFREG|0o644)<<16;info.compress_type=zipfile.ZIP_DEFLATED

@@ -17,7 +17,7 @@ async def async_setup(hass, config):
     from pathlib import Path
     from homeassistant.components.http import StaticPathConfig
     await hass.http.async_register_static_paths([StaticPathConfig(
-        "/xparkle_rvlevel/0.5.1/xparkle-card.js",
+        "/xparkle_rvlevel/0.6.0/xparkle-card.js",
         str(Path(__file__).parent / "frontend" / "xparkle-card.js"), True)])
     from .card import XparkleCardView
     hass.http.register_view(XparkleCardView())
@@ -45,7 +45,8 @@ async def async_setup_entry(hass, entry):
     if old_owner is not None:
         old_owner.detach()
     options = OPTIONS_SCHEMA({**DEFAULT_OPTIONS, **entry.options})
-    from .levelling import Geometry
+    from .const import UI_DEFAULTS
+    from .levelling import Geometry, GEOMETRY_DEFAULTS
     Geometry.from_options(options)
     session = Session(lambda: HATransport(hass, entry.data),
                       limits=Limits(poll_interval=options[CONF_POLL_SECONDS]),
@@ -78,14 +79,16 @@ async def async_setup_entry(hass, entry):
         await hass.config_entries.async_forward_entry_setups(entry, [Platform(p) for p in PLATFORMS])
         owner.callbacks.append(register_schedule(hass, entry, session))
 
-        previous_options = dict(entry.options)
+        effective_defaults = {**DEFAULT_OPTIONS, **GEOMETRY_DEFAULTS, **UI_DEFAULTS}
+        previous_options = options
 
         async def options_updated(hass, entry):
             nonlocal previous_options
-            changed = {key for key in previous_options.keys() | entry.options.keys()
-                       if previous_options.get(key) != entry.options.get(key)}
-            previous_options = dict(entry.options)
-            if changed <= {"level_tolerance_cm", "vehicle_type"}:
+            current = {**effective_defaults, **entry.options}
+            changed = {key for key in previous_options.keys() | current.keys()
+                       if previous_options.get(key) != current.get(key)}
+            previous_options = current
+            if changed <= {"level_tolerance_cm", "longitudinal_tolerance_cm", "vehicle_type"}:
                 # Presentation changes never restart or renew a live session.
                 session._emit()
             else:

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- Show a two-axis cross level with degree readouts and centimetre guidance in 0.25 cm steps.
+- Show four relative corner raises in the top view.
+- Add a separate configurable front-to-rear tolerance with a 2.00 cm default.
+
 ## 0.5.1
 
 - Remove exact HA Core/runtime-version rejection for capable ESPHome routes.

@@ -27,6 +27,33 @@ def test_fractional_interval_and_existing_integer_options(interval):
     result=OPTIONS_SCHEMA({**BASE,'measurement_interval_seconds':interval})
     assert result['measurement_interval_seconds']==interval
     assert result['level_tolerance_cm']==0.25 and result['vehicle_type']=='caravan'
+    assert result['longitudinal_tolerance_cm']==2
+
+
+@pytest.mark.parametrize("value", [True, float("nan"), "2", 0.04, 5.01])
+def test_invalid_longitudinal_tolerance(value):
+    with pytest.raises(vol.Invalid):
+        OPTIONS_SCHEMA({**BASE, "longitudinal_tolerance_cm": value})
+
+
+@pytest.mark.parametrize("gap,override,expected", [
+    (20, {}, True), (20.01, {}, False), (10, {"longitudinal_tolerance_cm": 1}, True),
+    (10.01, {"longitudinal_tolerance_cm": 1}, False),
+])
+def test_longitudinal_tolerance_is_independent(gap, override, expected):
+    entry = make_entry()
+    entry.options.update({**GEOM, **override})
+    now = datetime.now(timezone.utc)
+    entry.runtime_data = SimpleNamespace(
+        fresh=True, mode="manual", status="measuring",
+        measurement=Measurement(degrees(asin(gap / 5000)), 0, False, False, 100),
+        received_at=now, expires_at=now + timedelta(minutes=10), _sample_sequence=7,
+        identifier="synthetic", fresh_timeout=1.5, limits=SimpleNamespace(poll_interval=.5),
+    )
+    attrs = LevellingSensor(entry, "levelling_status").extra_state_attributes
+    assert attrs["longitudinal_tolerance_cm"] == override.get("longitudinal_tolerance_cm", 2)
+    assert attrs["level_tolerance_cm"] == .25
+    assert attrs["within_tolerance"] is expected
 
 
 @pytest.mark.parametrize('field,value',[(field,value) for field in ('measurement_interval_seconds','level_tolerance_cm') for value in (True,False,float('nan'),float('inf'),-1,'0.5',None,10**1000)]+[('measurement_interval_seconds',0.099),('measurement_interval_seconds',10.01),('level_tolerance_cm',0.049),('level_tolerance_cm',5.01),('vehicle_type','bus')])
@@ -157,7 +184,7 @@ async def test_static_registration_is_one_public_file_and_calibration_absent():
     assert await async_setup(hass,{})
     registered=hass.http.async_register_static_paths.await_args.args[0]
     assert len(registered)==1 and Path(registered[0].path).is_file()
-    assert registered[0].url_path=='/xparkle_rvlevel/0.5.1/xparkle-card.js'
+    assert registered[0].url_path=='/xparkle_rvlevel/0.6.0/xparkle-card.js'
     component=Path(__file__).parents[1]/'custom_components/xparkle_rvlevel'
     assert (component/'brand/icon.png').read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
     assert not (component/'calibration.py').exists()
@@ -168,6 +195,7 @@ async def test_static_registration_is_one_public_file_and_calibration_absent():
 async def test_native_tolerance_persists_without_reload_or_connection(adapter,monkeypatch,tmp_path):
     import importlib
     from test_native_lifecycle import native_entry,native_manager
+    from custom_components.xparkle_rvlevel.const import DEFAULT_OPTIONS
     from custom_components.xparkle_rvlevel.number import ToleranceNumber
     from custom_components.xparkle_rvlevel.select import VehicleSelect
     integration=importlib.import_module('custom_components.xparkle_rvlevel')
@@ -183,6 +211,12 @@ async def test_native_tolerance_persists_without_reload_or_connection(adapter,mo
     vehicle=VehicleSelect(entry);vehicle.hass=hass
     await vehicle.async_select_option('tandem');await hass.async_block_till_done()
     assert vehicle.current_option=='tandem' and entry.options['level_tolerance_cm']==.5
+    # The native options form materializes omitted defaults on save.
+    assert "measurement_interval_seconds" not in entry.options
+    options=OPTIONS_SCHEMA({**DEFAULT_OPTIONS,**entry.options,"longitudinal_tolerance_cm":1})
+    manager.async_update_entry(entry,options=options)
+    await hass.async_block_till_done()
+    assert LevellingSensor(entry,"levelling_status").extra_state_attributes["longitudinal_tolerance_cm"]==1
     manager.async_reload.assert_not_awaited();assert transport.calls==[]
     await integration.async_unload_entry(hass,entry)
 
@@ -200,7 +234,7 @@ async def test_actual_native_static_route_serves_only_exact_public_file(tmp_path
     client=TestClient(TestServer(http.app,host='127.0.0.1'))
     try:
         await client.start_server()
-        response=await client.get('/xparkle_rvlevel/0.5.1/xparkle-card.js')
+        response=await client.get('/xparkle_rvlevel/0.6.0/xparkle-card.js')
         expected=Path(__file__).parents[1]/'custom_components/xparkle_rvlevel/frontend/xparkle-card.js'
         assert response.status==200 and await response.read()==expected.read_bytes()
         for method in ('get','head'):
@@ -211,8 +245,8 @@ async def test_actual_native_static_route_serves_only_exact_public_file(tmp_path
         assert response.status==200 and await response.read()==expected.read_bytes()
         for path in ('/xparkle_rvlevel/','/xparkle_rvlevel/manifest.json','/xparkle_rvlevel/xparkle-card.js/../manifest.json'):
             assert (await client.get(path)).status==404
-        for path in ('/xparkle_rvlevel/0.5.1/','/xparkle_rvlevel/0.5.1/manifest.json',
-                     '/xparkle_rvlevel/0.5.1/xparkle-card.js/../manifest.json'):
+        for path in ('/xparkle_rvlevel/0.6.0/','/xparkle_rvlevel/0.6.0/manifest.json',
+                     '/xparkle_rvlevel/0.6.0/xparkle-card.js/../manifest.json'):
             response=await client.get(path)
             assert response.status==404
     finally:
